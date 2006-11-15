@@ -19,6 +19,7 @@ package org.apache.axis2.jaxws.message;
 import java.util.List;
 
 import javax.activation.DataHandler;
+import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPMessage;
 
 /**
@@ -77,8 +78,31 @@ public interface Message extends XMLPart {
      */
     public Attachment getAttachment(String cid);
     
+    /** 
+     * Get the attachment and remove it from the Message
+     * @param cid
+     * @return
+     */
+    public Attachment removeAttachment(String cid);
+    
+    /**
+     * @return if this is an MTOM message
+     */
     public boolean isMTOMEnabled();
     
+    /** Indicate whether this is an MTOM message
+     * @param b
+     */
     public void setMTOMEnabled(boolean b);
-	
+    
+    /**
+     * @return get the MimeHeaders
+     */
+    public MimeHeaders getMimeHeaders();
+    
+    /**
+     * Set the MimeHeaders
+     * @param mhs MimeHeaders
+     */
+    public void setMimeHeaders(MimeHeaders mhs);
 }

@@ -21,7 +21,6 @@ package org.apache.axis2.jaxws.client.proxy;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Map;
 import java.util.concurrent.Future;
 
 import javax.jws.soap.SOAPBinding;
@@ -33,6 +32,7 @@ import javax.xml.ws.Response;
 
 import org.apache.axis2.jaxws.BindingProvider;
 import org.apache.axis2.jaxws.ExceptionFactory;
+import org.apache.axis2.jaxws.client.async.AsyncResponse;
 import org.apache.axis2.jaxws.core.InvocationContext;
 import org.apache.axis2.jaxws.core.InvocationContextFactory;
 import org.apache.axis2.jaxws.core.MessageContext;
@@ -41,9 +41,9 @@ import org.apache.axis2.jaxws.core.controller.InvocationController;
 import org.apache.axis2.jaxws.description.EndpointDescription;
 import org.apache.axis2.jaxws.description.OperationDescription;
 import org.apache.axis2.jaxws.description.ServiceDescription;
+import org.apache.axis2.jaxws.description.ServiceDescriptionWSDL;
 import org.apache.axis2.jaxws.handler.PortData;
 import org.apache.axis2.jaxws.i18n.Messages;
-import org.apache.axis2.jaxws.impl.AsyncListener;
 import org.apache.axis2.jaxws.marshaller.MethodMarshaller;
 import org.apache.axis2.jaxws.marshaller.factory.MethodMarshallerFactory;
 import org.apache.axis2.jaxws.message.Message;
@@ -51,7 +51,6 @@ import org.apache.axis2.jaxws.message.Protocol;
 import org.apache.axis2.jaxws.registry.FactoryRegistry;
 import org.apache.axis2.jaxws.spi.ServiceDelegate;
 import org.apache.axis2.jaxws.util.WSDLWrapper;
-import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -198,7 +197,8 @@ public class JAXWSProxyHandler extends BindingProvider implements
             }
 		}
 		
-		if(method.getReturnType().isAssignableFrom(Future.class)){
+		//if(method.getReturnType().isAssignableFrom(Future.class))
+		if(method.getReturnType() == Future.class){
 			if(log.isDebugEnabled()){
 				log.debug("Async Callback");
 			}
@@ -213,8 +213,8 @@ public class JAXWSProxyHandler extends BindingProvider implements
 			if(asyncHandler == null){
 				throw ExceptionFactory.makeWebServiceException("AynchHandler null for Async callback, Invalid AsyncHandler callback Object");
 			}
-			AsyncListener listener = createProxyListener(args);
-			requestIC.setAsyncListener(listener);
+			AsyncResponse listener = createProxyListener(args);
+			requestIC.setAsyncResponseListener(listener);
 			requestIC.setExecutor(delegate.getExecutor());
 				        
 	        Future<?> future = controller.invokeAsync(requestIC, asyncHandler);
@@ -228,12 +228,13 @@ public class JAXWSProxyHandler extends BindingProvider implements
 	        return future;
 		}
 		
-		if(method.getReturnType().isAssignableFrom(Response.class)){
+		//if(method.getReturnType().isAssignableFrom(Response.class))
+		if(method.getReturnType() == Response.class){
 			if(log.isDebugEnabled()){
 				log.debug("Async Polling");
 			}
-			AsyncListener listener = createProxyListener(args);
-			requestIC.setAsyncListener(listener);
+			AsyncResponse listener = createProxyListener(args);
+			requestIC.setAsyncResponseListener(listener);
 			requestIC.setExecutor(delegate.getExecutor());
 	        
 			Response response = controller.invokeAsync(requestIC);
@@ -263,7 +264,7 @@ public class JAXWSProxyHandler extends BindingProvider implements
 		return null;
 	}
 	
-	private AsyncListener createProxyListener(Object[] args){
+	private AsyncResponse createProxyListener(Object[] args){
 		ProxyAsyncListener listener = new ProxyAsyncListener();
 		listener.setHandler(this);
 		listener.setInputArgs(args);
@@ -317,6 +318,9 @@ public class JAXWSProxyHandler extends BindingProvider implements
 		    }
 		    
 		    throw (Throwable)object;
+		} else if (responseContext.getLocalException() != null) {
+		    // use the factory, it'll throw the right thing:
+		    throw ExceptionFactory.makeWebServiceException(responseContext.getLocalException());
 		}
 		Object object = methodMarshaller.demarshalResponse(responseMsg, args);
 		if (log.isDebugEnabled()) {
@@ -332,7 +336,7 @@ public class JAXWSProxyHandler extends BindingProvider implements
 	
 	private boolean isValidMethodCall(Method method){
 		Class clazz = method.getDeclaringClass();
-		if(clazz == javax.xml.ws.BindingProvider.class || clazz == seiClazz){
+		if(clazz.isAssignableFrom(javax.xml.ws.BindingProvider.class) || clazz.isAssignableFrom(seiClazz)){
 			return true;
 		}
 		return false;
@@ -346,7 +350,7 @@ public class JAXWSProxyHandler extends BindingProvider implements
 		String soapAddress = null;
 		String soapAction = null;
 		String endPointAddress = port.getEndpointAddress();
-		WSDLWrapper wsdl = delegate.getServiceDescription().getWSDLWrapper();
+		WSDLWrapper wsdl = ((ServiceDescriptionWSDL) delegate.getServiceDescription()).getWSDLWrapper();
 		QName serviceName = delegate.getServiceName();
 		QName portName = port.getPortName();
 		if (wsdl != null) {
@@ -365,7 +369,7 @@ public class JAXWSProxyHandler extends BindingProvider implements
 	}
 	
 	private boolean isMethodExcluded(){
-		return operationDesc.getWebMethodExclude();
+		return operationDesc.isExcluded();
 	}
 
 	public PortData getPort() {
@@ -406,11 +410,13 @@ public class JAXWSProxyHandler extends BindingProvider implements
 		}
 		//FIXME: The protocol should actually come from the binding information included in
 	    // either the WSDL or an annotation.
-		return cf.createDocLitMethodMarshaller(parameterStyle, serviceDesc, endpointDesc, operationDesc, Protocol.soap11);
+		return cf.createMethodMarshaller(SOAPBinding.Style.DOCUMENT, parameterStyle, 
+                serviceDesc, endpointDesc, operationDesc, Protocol.soap11);
 	}
 	
 	private MethodMarshaller createRPCLitMethodMarshaller(MethodMarshallerFactory cf){
-		return cf.createDocLitMethodMarshaller(null, serviceDesc, endpointDesc, operationDesc, Protocol.soap11);
+		return cf.createMethodMarshaller(SOAPBinding.Style.DOCUMENT, SOAPBinding.ParameterStyle.WRAPPED,
+                serviceDesc, endpointDesc, operationDesc, Protocol.soap11);
 	}
 	protected boolean isDocLitBare(){
 		SOAPBinding.ParameterStyle methodParamStyle = operationDesc.getSoapBindingParameterStyle();

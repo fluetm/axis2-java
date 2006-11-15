@@ -16,154 +16,80 @@
  */
 package org.apache.axis2.jaxws.message.databinding;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.JAXBIntrospector;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /*
- * A JAXBBlockContext controls access to the JAXB Context/Marshal/Unmarshal code.
+ * A JAXBBlockContext controls access to the JAXB Context
  * In addition the JAXBBlockContext contains additional contextural information needed
- * by the JAX-WS component (i.e. the type of the object)
+ * by the JAX-WS component
  * 
  * This class is immutable after construction.
  */
 public class JAXBBlockContext {
-
-	private Class type = null;
+    
+    private static final Log log = LogFactory.getLog(JAXBBlockContext.class);
+    
+	private Set<Package> contextPackages;  // List of packages needed by the context
 	private JAXBContext jaxbContext = null;
-	private boolean useJAXBElement = false;
-	private JAXBIntrospector introspector = null;
 	
 	/**
 	 * Normal Constructor JAXBBlockContext
-	 * @param type Class object that represents the actual type of the object.
-	 * @param useJAXBElement boolean indicating whether the object should be rendered
-	 * as a JAXBElement.
-	 * 
-	 * Example: if the object is a primitive (type=int.class) then 
-	 * useJAXBElement must be set to true because int is not a JAXB object.
-	 * 
-	 * Example: if the object is a JAXB object you would normally set useJAXBElement
-	 * to false.  However if the JAXB object does not have a corresponding root element,
-	 * then useJAXBElement hould be set to false.
+	 * @param packages Set of packages needed by the JAXBContext.
 	 */
-	public JAXBBlockContext(Class type, boolean useJAXBElement) {
-		this(type, useJAXBElement, null);
+	public JAXBBlockContext(Set<Package> packages) {
+        this.contextPackages = packages;
 	}
+    
+    /**
+     * Normal Constructor JAXBBlockContext
+     * @param contextPackage
+     */
+    public JAXBBlockContext(Package contextPackage) {
+        this.contextPackages = new HashSet();
+        this.contextPackages.add(contextPackage);
+    }
 
 	/**
 	 * "Dispatch" Constructor
 	 * Use this full constructor when the JAXBContent is provided by
 	 * the customer.  
-	 * @param type
-	 * @param useJAXBElement
 	 * @param jaxbContext
 	 */
-	public JAXBBlockContext(Class type, boolean useJAXBElement, JAXBContext jaxbContext) {
-		this.type = type;
-		this.useJAXBElement = useJAXBElement;
+	public JAXBBlockContext(JAXBContext jaxbContext) {
 		this.jaxbContext = jaxbContext;
 	}
 
 	/**
 	 * @return Class representing type of the element
 	 */
-	public Class getType() {
-		return type;
+	public Set<Package> getContextPackages() {
+		return contextPackages;
 	}
-
-	/**
-	 * @return indicate if object should be rendered as JAXBElement
-	 */
-	public boolean isUseJAXBElement() {
-		return useJAXBElement;
-	}
-
+    
 	/**
 	 * @return get the JAXBContext
 	 * @throws JAXBException
 	 */
 	public JAXBContext getJAXBContext() throws JAXBException {
 		if (jaxbContext == null) {	
-			if (!useJAXBElement) {
-				// TODO Need J2W AccessController
-				// TODO Need to cache this
-				jaxbContext = JAXBContext.newInstance(new Class[]{type});
-			} else {
-				// TODO This may be overkill.
-				jaxbContext = JAXBContext.newInstance(new Class[]{type});
-			}
+		    if (log.isDebugEnabled()) {
+		        log.debug("A JAXBContext did not exist, creating a new one with the context packages.");
+            }
+            jaxbContext = JAXBUtils.getJAXBContext(contextPackages);
 		}
+        else {
+            if (log.isDebugEnabled()) {
+                log.debug("Using an existing JAXBContext");
+            }
+        }
 		return jaxbContext;
-	}
-
-
-
-	/**
-	 * @return Unmarshaller
-	 * @throws JAXBException
-	 */
-	public Unmarshaller getUnmarshaller() throws JAXBException {
-		// TODO A New unmarahller is always created.  We should consider how to recognize if when a marshaller can be reused.
-		
-		Unmarshaller unmarshaller = null;
-		JAXBContext jc = getJAXBContext();
-		if (!useJAXBElement) {
-			// TODO Caching
-			unmarshaller = jc.createUnmarshaller();
-	     } else {
-			// TODO There may be a way to share JAXBElement unmarshallers ?
-			unmarshaller = jc.createUnmarshaller();
-		}
-		// TODO Additional options for unmarshaller ?
-			
-		// TODO Should we set up MTOM Attachment handler here ?
-		
-		return unmarshaller;
-	}
-	
-	/**
-	 * @return Marshaller
-	 * @throws JAXBException
-	 */
-	public Marshaller getMarshaller() throws JAXBException {
-		// TODO A New marahller is always created.  We should consider how to recognize if when a marshaller can be reused.
-		Marshaller marshaller = null;
-		JAXBContext jc = getJAXBContext();
-		if (!useJAXBElement) {
-			// TODO Caching
-			marshaller = jc.createMarshaller();
-		} else {
-			// TODO There may be a way to share these ?
-			marshaller = jc.createMarshaller();
-		}
-		// TODO Additional options for marshaller ?
-		marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE); // No PIs
-
-		// TODO Should we set up MTOM Attachment handler here ?
-		return marshaller;
-	}
-	
-	/**
-	 * @return Intospector
-	 * @throws JAXBException
-	 */
-	public JAXBIntrospector getIntrospector() throws JAXBException {
-		if (introspector == null) {
-			JAXBContext jc = getJAXBContext();
-			if (!useJAXBElement) {
-				// TODO Caching
-				introspector = jc.createJAXBIntrospector();
-			} else {
-				// TODO There may be a way to share these ?
-				introspector = jc.createJAXBIntrospector();
-			}
-			// TODO Additional options for unmarshaller ?
-			
-			// TODO Should we set up MTOM Attachment handler here ?
-		}
-		return introspector;
 	}
 }

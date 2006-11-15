@@ -20,8 +20,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.ws.Service.Mode;
 
 import org.apache.axis2.jaxws.ExceptionFactory;
+import org.apache.axis2.jaxws.client.async.AsyncResponse;
 import org.apache.axis2.jaxws.core.MessageContext;
-import org.apache.axis2.jaxws.impl.AsyncListener;
 import org.apache.axis2.jaxws.message.Block;
 import org.apache.axis2.jaxws.message.Message;
 import org.apache.axis2.jaxws.message.databinding.JAXBBlockContext;
@@ -33,7 +33,7 @@ import org.apache.axis2.jaxws.registry.FactoryRegistry;
  * {@link org.apache.axis2.jaxws.impl.AsyncListener} class to provide JAX-B
  * specific function when processing an async response.
  */
-public class JAXBDispatchAsyncListener extends AsyncListener {
+public class JAXBDispatchAsyncListener extends AsyncResponse {
     
     private Mode mode;
     private JAXBContext jaxbContext;
@@ -56,7 +56,7 @@ public class JAXBDispatchAsyncListener extends AsyncListener {
         Message message = mc.getMessage();
         try {
             JAXBBlockFactory factory = (JAXBBlockFactory) FactoryRegistry.getFactory(JAXBBlockFactory.class);
-            JAXBBlockContext context = new JAXBBlockContext(null, false, jaxbContext);
+            JAXBBlockContext context = new JAXBBlockContext(jaxbContext);
             Block block = message.getBodyBlock(0, context, factory);
             value = block.getBusinessObject(true);
         } catch (Exception e) {

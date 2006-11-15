@@ -213,9 +213,16 @@ public class ExceptionFactory {
 		Throwable rootCause = null;
 		if (t != null) {
 			rootCause = getRootCause(t);
-		}
-		WebServiceException e = new WebServiceException(message, t);
-		if (log.isDebugEnabled()) {
+		} 
+		rootCause = rootCause==null ? t :rootCause;
+		WebServiceException e = null;
+        if (message != null) {
+        	e =new WebServiceException(message, rootCause);
+        } else {
+        	e = new WebServiceException(rootCause);
+        }
+		
+        if (log.isDebugEnabled()) {
 			log.debug("Create Exception:", e);
 		}
 		return e;
@@ -232,9 +239,15 @@ public class ExceptionFactory {
 		if (t != null) {
 			rootCause = getRootCause(t);
 		}
-		ProtocolException e = new ProtocolException(message, t);
+		rootCause = rootCause==null ? t :rootCause;
+		ProtocolException e = null;
+		if (message != null) {
+			e = new ProtocolException(message, rootCause);
+		} else {
+			e = new ProtocolException(rootCause);
+		}
 		if (log.isDebugEnabled()) {
-			log.debug("create Exception:", t);
+			log.debug("create Exception:", e);
 		}
 		return e;
 	}
@@ -250,9 +263,16 @@ public class ExceptionFactory {
 		if (t != null) {
 			rootCause = getRootCause(t);
 		}
-		MessageException e = new MessageException(message, t);
+		rootCause = rootCause==null ? t :rootCause;
+		
+		MessageException e = null;
+		if (message != null) {
+			e = new MessageException(message, rootCause);
+		} else {
+			e = new MessageException(rootCause);
+		}
 		if (log.isDebugEnabled()) {
-			log.debug("create Exception:", t);
+			log.debug("create Exception:", e);
 		}
 		return e;
 	}
@@ -268,9 +288,16 @@ public class ExceptionFactory {
 		if (t != null) {
 			rootCause = getRootCause(t);
 		}
-		MessageInternalException e = new MessageInternalException(message, t);
+		rootCause = rootCause==null ? t :rootCause;
+		
+		MessageInternalException e = null;
+		if (message != null) {
+			e = new MessageInternalException(message, rootCause);
+		} else {
+			e = new MessageInternalException(rootCause);
+		}
 		if (log.isDebugEnabled()) {
-			log.debug("create Exception:", t);
+			log.debug("create Exception:", e);
 		}
 		return e;
 	}
@@ -310,7 +337,7 @@ public class ExceptionFactory {
     	if (cause == null) {
     		cause = t.getCause();
     	}
-    	return null;
+        return cause;
     }
     
     /**
@@ -326,6 +353,8 @@ public class ExceptionFactory {
     	while (t != null) {
     		Throwable nextCause = null;
     		if (t instanceof InvocationTargetException ||
+    		    t instanceof MessageException ||
+    		    t instanceof MessageInternalException ||
     		    t instanceof AxisFault) {
     			// Skip over this cause
     			nextCause = getCause(t);

@@ -146,7 +146,30 @@ public abstract class InvocationController {
      * @param callback
      * @return
      */
-    public abstract Response invokeAsync(InvocationContext ic);
+    public Response invokeAsync(InvocationContext ic) {
+        if (log.isDebugEnabled()) {
+            log.debug("Invocation pattern: asynchronous(callback)");
+        }
+        
+        // Check to make sure we at least have a valid InvocationContext
+        // and request MessageContext
+        if (ic == null) {
+            throw ExceptionFactory.makeWebServiceException(Messages.getMessage("ICErr1"));
+        }
+        if (ic.getRequestMessageContext() == null) {
+            throw ExceptionFactory.makeWebServiceException(Messages.getMessage("ICErr2"));
+        }
+        
+        MessageContext request = ic.getRequestMessageContext();
+
+        // TODO: Place-holder for running the JAX-WS request handler chain
+        
+        prepareRequest(request);
+        Response resp = doInvokeAsync(request);
+        return resp;
+    }
+    
+    public abstract Response doInvokeAsync(MessageContext mc);
     
     /**
      * Performs an asynchronous (non-blocking) invocation of the client based 

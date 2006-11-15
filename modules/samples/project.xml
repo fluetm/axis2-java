@@ -42,7 +42,7 @@
             <version>${axiom.version}</version>
         </dependency>
 	<dependency>
-            <groupId>org.apache.ws.commons.neethi</groupId>
+            <groupId>org.apache.neethi</groupId>
             <artifactId>neethi</artifactId>
             <version>${neethi.version}</version>
             <properties>
@@ -52,11 +52,6 @@
         <dependency>
             <groupId>org.apache.axis2</groupId>
             <artifactId>axis2-addressing</artifactId>
-            <version>${pom.currentVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.axis2</groupId>
-            <artifactId>axis2-savan</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
 	  <dependency>
@@ -220,6 +215,15 @@
         <nagEmailAddress>axis-dev@ws.apache.org</nagEmailAddress>
         <sourceDirectory>src</sourceDirectory>
         <unitTestSourceDirectory>test</unitTestSourceDirectory>
+	
+	<sourceModifications>
+            <sourceModification>
+		<className>fakeClass</className>
+		<excludes>
+	      	     <exclude>**/eventing/**</exclude>
+		</excludes>
+	    </sourceModification>
+        </sourceModifications>
 
         <unitTest>
 

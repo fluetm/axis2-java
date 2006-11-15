@@ -29,6 +29,7 @@ import javax.xml.soap.SOAPMessage;
 import javax.xml.transform.Source;
 import javax.xml.ws.Provider;
 import javax.xml.ws.Service;
+import javax.xml.ws.soap.SOAPBinding;
 
 import org.apache.axiom.om.OMElement;
 import org.apache.axis2.description.AxisOperation;
@@ -97,6 +98,9 @@ public class ProviderDispatcher extends JavaDispatcher{
         // to be invoking against
         providerType = getProviderType();
         
+        // REVIEW: This assumes there is only one endpoint description on the service.  Is that always the case?
+        EndpointDescription endpointDesc = mc.getServiceDescription().getEndpointDescriptions()[0];
+        
         // Now that we know what kind of Provider we have, we can create the 
         // right type of Block for the request parameter data
         Object requestParamValue = null;
@@ -107,15 +111,18 @@ public class ProviderDispatcher extends JavaDispatcher{
             // Determine what type blocks we want to create (String, Source, etc) based on Provider Type
             BlockFactory factory = createBlockFactory(providerType);
             
-            // REVIEW: This assumes there is only one endpoint description on the service.  Is that always the case?
-            EndpointDescription endpointDesc = mc.getServiceDescription().getEndpointDescriptions()[0];
-            providerServiceMode = endpointDesc.getServiceModeValue();
+            
+            providerServiceMode = endpointDesc.getServiceMode();
             
             if (providerServiceMode != null && providerServiceMode == Service.Mode.MESSAGE) {
                 // For MESSAGE mode, work with the entire message, Headers and Body
                 // This is based on logic in org.apache.axis2.jaxws.client.XMLDispatch.getValueFromMessage()
                 if (providerType.equals(SOAPMessage.class)) {
                     // We can get the SOAPMessage directly from the message itself
+                    if (log.isDebugEnabled()) {
+                        log.debug("Provider Type is SOAPMessage.");
+                        log.debug("Number Message attachments=" + message.getAttachments().size());
+                    }
                     requestParamValue = message.getAsSOAPMessage();
                 }
                 else {
@@ -134,20 +141,30 @@ public class ProviderDispatcher extends JavaDispatcher{
             }
             else {
                 // If it is not MESSAGE, then it is PAYLOAD (which is the default); only work with the body 
-                Block block = message.getBodyBlock(0, null, factory);
-                requestParamValue = block.getBusinessObject(true);
-            }
+            	if(message.getNumBodyBlocks()!=0){
+            		Block block = message.getBodyBlock(0, null, factory);
+            		requestParamValue = block.getBusinessObject(true);
+            	}else{
+            		if(log.isDebugEnabled()){
+            			log.debug("No body blocks in SOAPMessage, Calling provider method with null input parameters");
+            		}
+            		requestParamValue = null;
+            	}
+           }
         }
 
         if (log.isDebugEnabled())
             log.debug("Provider Type = " + providerType + "; parameter type = " + requestParamValue);
         
         final Object input = providerType.cast(requestParamValue);
-        if (log.isDebugEnabled()) {
+        if (input!=null && log.isDebugEnabled()) {
             log.debug("Invoking Provider<" + providerType.getName() + "> with " +
                     "parameter of type " + input.getClass().getName());
         }
-
+        if(input == null && log.isDebugEnabled()){
+        	log.debug("Invoking Provider<" + providerType.getName() + "> with " +
+                    "NULL input parameter");
+        }
 
         // Invoke the actual Provider.invoke() method
         Object responseParamValue = null;
@@ -167,6 +184,16 @@ public class ProviderDispatcher extends JavaDispatcher{
         MessageContext responseMsgCtx = null;
         if (!isOneWay(mc.getAxisMessageContext())) {
             Message responseMsg = createMessageFromValue(responseParamValue);
+            
+            // Enable MTOM if indicated by the binding
+            String bindingType = endpointDesc.getBindingType();
+            if (bindingType != null) {
+                if (bindingType.equals(SOAPBinding.SOAP11HTTP_MTOM_BINDING) ||
+                    bindingType.equals(SOAPBinding.SOAP12HTTP_MTOM_BINDING)) {
+                    responseMsg.setMTOMEnabled(true);
+                }
+            }
+            
             responseMsgCtx = MessageContextUtils.
                 createMessageMessageContext(mc);
             
@@ -330,8 +357,10 @@ public class ProviderDispatcher extends JavaDispatcher{
             clazz == Source.class ||
             clazz == DataSource.class;
         
-        if (log.isDebugEnabled()) {
-            log.debug("Class " + clazz.getName() + " is not a valid Provider<T> type");
+        if (!valid) {
+            if (log.isDebugEnabled()) {
+                log.debug("Class " + clazz.getName() + " is not a valid Provider<T> type");
+            }
         }
         
         return valid; 

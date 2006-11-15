@@ -33,7 +33,7 @@
   <wsdl:binding name="ResourceInjectionBinding" type="tns:ResourceInjectionPortType">
     <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
     <wsdl:operation name="echo">
-      <soap:operation soapAction="http://resourceinjection.sample.test.org/NewOperation"/>
+      <soap:operation soapAction="http://resourceinjection.sample.test.org/echo"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>

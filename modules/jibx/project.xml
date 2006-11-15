@@ -42,7 +42,7 @@
             <version>${XmlSchema.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.ws.commons.neethi</groupId>
+            <groupId>org.apache.neethi</groupId>
             <artifactId>neethi</artifactId>
             <version>${neethi.version}</version>
             <properties>
@@ -93,7 +93,7 @@
             </properties>
         </dependency>
         <dependency>
-            <groupId>bcel</groupId>
+            <groupId>org.apache.bcel</groupId>
             <artifactId>bcel</artifactId>
             <version>${bcel.version}</version>
             <properties>

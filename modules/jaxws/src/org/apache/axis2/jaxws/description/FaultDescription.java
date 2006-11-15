@@ -18,8 +18,6 @@
 
 package org.apache.axis2.jaxws.description;
 
-import javax.xml.ws.WebFault;
-
 /**
  * A FaultDescription corresponds to a fault that can be thrown from an operation.  NOTE this it not 
  * implemented yet!
@@ -44,35 +42,11 @@ import javax.xml.ws.WebFault;
  *         
  *  </pre>       
  */
-// TODO: This class is not implemented yet or used from OperationDescription
-public class FaultDescription {
-    
-    private String exceptionClassName;
-    private String beanName;
-    private WebFault annotation;
-    private OperationDescription parent;
-
-    public FaultDescription(String exceptionClassName, String beanName, WebFault annotation, OperationDescription parent) {
-        this.exceptionClassName = exceptionClassName;
-        this.beanName = beanName;
-        this.annotation = annotation;
-        this.parent = parent;
-    }
-
-    public WebFault getAnnotation() {
-        return annotation;
-    }
-
-    public String getBeanName() {
-        return beanName;
-    }
-
-    public String getExceptionClassName() {
-        return exceptionClassName;
-    }
-
-    public OperationDescription getParent() {
-        return parent;
-    }
+public interface FaultDescription {
+    public OperationDescription getOperationDescription();
+    public String getFaultBean();
+    public String getName();
+    public String getTargetNamespace();
+    public String getExceptionClassName();
     
 }

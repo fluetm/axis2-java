@@ -1,18 +1,20 @@
 /*
- * Copyright 2006 The Apache Software Foundation.
- * Copyright 2006 International Business Machines Corp.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *      
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package org.apache.axis2.jaxws.spi;
@@ -27,6 +29,8 @@ import java.util.concurrent.Executors;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.namespace.QName;
+import javax.xml.soap.SOAPMessage;
+import javax.xml.transform.Source;
 import javax.xml.ws.BindingProvider;
 import javax.xml.ws.Dispatch;
 import javax.xml.ws.Service;
@@ -44,10 +48,10 @@ import org.apache.axis2.jaxws.client.XMLDispatch;
 import org.apache.axis2.jaxws.client.proxy.JAXWSProxyHandler;
 import org.apache.axis2.jaxws.description.DescriptionFactory;
 import org.apache.axis2.jaxws.description.ServiceDescription;
+import org.apache.axis2.jaxws.description.ServiceDescriptionWSDL;
 import org.apache.axis2.jaxws.handler.PortData;
 import org.apache.axis2.jaxws.handler.PortInfoImpl;
 import org.apache.axis2.jaxws.i18n.Messages;
-import org.apache.axis2.jaxws.registry.FactoryRegistry;
 import org.apache.axis2.jaxws.util.WSDLWrapper;
 
 /**
@@ -109,8 +113,10 @@ public class ServiceDelegate extends javax.xml.ws.spi.ServiceDelegate {
             throw ExceptionFactory.makeWebServiceException(Messages.getMessage("addPortErr2"));
         }
         
-        if(bindingId!=null && !(bindingId.equals(SOAPBinding.SOAP11HTTP_BINDING) ||
-                bindingId.equals(SOAPBinding.SOAP12HTTP_BINDING))){
+        if(bindingId != null && !(bindingId.equals(SOAPBinding.SOAP11HTTP_BINDING) ||
+           bindingId.equals(SOAPBinding.SOAP12HTTP_BINDING) ||
+           bindingId.equals(SOAPBinding.SOAP11HTTP_MTOM_BINDING) ||
+           bindingId.equals(SOAPBinding.SOAP12HTTP_MTOM_BINDING))) {
             // TODO Is this the correct exception. Shouldn't this be a WebServiceException ?
             throw new UnsupportedOperationException(Messages.getMessage("addPortErr0", portName.toString()));
         }
@@ -141,7 +147,9 @@ public class ServiceDelegate extends javax.xml.ws.spi.ServiceDelegate {
     	if(qname == null){
     		throw ExceptionFactory.makeWebServiceException(Messages.getMessage("createDispatchFail0"));
     	}
-    	
+    	if(!isValidDispatchType(clazz)){
+    		throw ExceptionFactory.makeWebServiceException(Messages.getMessage("dispatchInvalidType"));
+    	}
     	if(!isPortValid(qname)){
     		throw ExceptionFactory.makeWebServiceException(Messages.getMessage("createDispatchFail1", qname.toString()));
     	}
@@ -169,7 +177,7 @@ public class ServiceDelegate extends javax.xml.ws.spi.ServiceDelegate {
         
         dispatch.setServiceClient(serviceClient);
         dispatch.setServiceDelegate(this);
-    	
+    	dispatch.setType(clazz);
         return dispatch;        
     }
     
@@ -302,7 +310,7 @@ public class ServiceDelegate extends javax.xml.ws.spi.ServiceDelegate {
      * @see javax.xml.ws.spi.ServiceDelegate#getWSDLDocumentLocation()
      */
     public URL getWSDLDocumentLocation() {
-        return serviceDescription.getWSDLLocation();
+        return ((ServiceDescriptionWSDL) serviceDescription).getWSDLLocation();
     }
     
     /*
@@ -390,7 +398,7 @@ public class ServiceDelegate extends javax.xml.ws.spi.ServiceDelegate {
     
     // TODO: Remove this method and put the WSDLWrapper methods on the ServiceDescriptor directly
     private WSDLWrapper getWSDLWrapper() {
-    	return serviceDescription.getWSDLWrapper();
+    	return ((ServiceDescriptionWSDL) serviceDescription).getWSDLWrapper();
     }
     
     private boolean isServiceDefined(QName serviceName){
@@ -413,5 +421,11 @@ public class ServiceDelegate extends javax.xml.ws.spi.ServiceDelegate {
 	        	//instantiate http binding implementation here and call setBinding in BindingProvider
 	        }
         }
+    }
+    
+    private boolean isValidDispatchType(Class clazz) {
+    	return clazz != null && (clazz == String.class || 
+    			clazz == Source.class || 
+    			clazz == SOAPMessage.class);
     }
 }
