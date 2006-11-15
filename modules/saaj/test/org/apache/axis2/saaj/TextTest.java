@@ -1,46 +1,56 @@
+/*
+* Copyright 2004,2005 The Apache Software Foundation.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
 package org.apache.axis2.saaj;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-
 import junit.framework.TestCase;
-
-import javax.xml.soap.MessageFactory;
-import javax.xml.soap.MimeHeaders;
-import javax.xml.soap.SOAPEnvelope;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPFactory;
-import javax.xml.soap.SOAPMessage;
-import javax.xml.soap.SOAPHeader;
-import javax.xml.soap.SOAPBody;
-import javax.xml.soap.SOAPElement;
-import javax.xml.soap.Name;
-import javax.xml.soap.SOAPBodyElement;
-import javax.xml.soap.SOAPPart;
-import javax.xml.soap.Text;
-
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.MimeHeaders;
+import javax.xml.soap.Name;
+import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPBodyElement;
+import javax.xml.soap.SOAPElement;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPFactory;
+import javax.xml.soap.SOAPMessage;
+import javax.xml.soap.Text;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
 public class TextTest extends TestCase {
-	
-	public TextTest(String name){
-		super(name);
-	}
-	
-	//Test SAAJ addTextNode performance
-	public void testAddTextNode() throws Exception {
+
+    public TextTest(String name) {
+        super(name);
+    }
+
+    //Test SAAJ addTextNode performance
+    public void testAddTextNode() throws Exception {
         SOAPFactory soapFactory = SOAPFactory.newInstance();
         MessageFactory factory = MessageFactory.newInstance();
         SOAPMessage message = factory.createMessage();
-        SOAPHeader header = message.getSOAPHeader();
         SOAPBody body = message.getSOAPBody();
-        
+
         // Create the base element
         Name bodyName = soapFactory.createName("VBGenReceiver", "xsi",
-                "http://www.w3.org/2001/XMLSchema-instance");
+                                               "http://www.w3.org/2001/XMLSchema-instance");
         SOAPBodyElement bodyElement = body.addBodyElement(bodyName);
-        
+                                                           
         // Create the MetaData Tag
         Name name = soapFactory.createName("MetaData");
         SOAPElement metaData = bodyElement.addChildElement(name);
@@ -132,49 +142,44 @@ public class TextTest extends TestCase {
         SOAPElement postalCode = delivery.addChildElement(name);
         postalCode.addTextNode("PostalCode015");
 
-        System.out.println("The message is lll:\n");
+        System.out.println("The message is:\n");
         message.writeTo(System.out);
+        System.out.flush();
+    }
 
-	}
-	
-	public void testComment() throws SOAPException, IOException{
-		
-		String xmlString = "<?xml version='1.0' encoding='utf-8'?> " +
-				"<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
-				"<soapenv:Header></soapenv:Header><soapenv:Body>" + 
-				"<Node:abc xmlns:Node=\"http://www.simpletest.org\">" + 
-				"This is some text" + 
-				"<!--This is comment-->This is other text</Node:abc>" + 
-				"</soapenv:Body></soapenv:Envelope>";
-		
-		MessageFactory mf = MessageFactory.newInstance();
-		SOAPMessage message = 
-    		mf.createMessage(new MimeHeaders(), new ByteArrayInputStream(xmlString.getBytes()));
-        
+    public void testComment() throws SOAPException, IOException {
+
+        String xmlString = "<?xml version='1.0' encoding='utf-8'?> " +
+                           "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+                           "<soapenv:Header></soapenv:Header>" +
+                           "<soapenv:Body>" +
+                           "<Node:abc xmlns:Node=\"http://www.simpletest.org\">" +
+                           "This is some text" +
+                           "<!--This is comment-->This is other text" +
+                           "<!--This is another comment-->This is some other text" +
+                           "</Node:abc>" +
+                           "</soapenv:Body>" +
+                           "</soapenv:Envelope>";
+
+        MessageFactory mf = MessageFactory.newInstance();
+        SOAPMessage message =
+                mf.createMessage(new MimeHeaders(), new ByteArrayInputStream(xmlString.getBytes()));
+
         SOAPBody body = message.getSOAPBody();
         Node bodyElement = body.getFirstChild();
         NodeList textNodes = bodyElement.getChildNodes();
-        
-        assertEquals(textNodes.getLength(), 3);
-        
-        for(int i = 0;i < textNodes.getLength(); i++){
-        	Node nde = textNodes.item(i);
-        	boolean isComment;
-        	if(nde instanceof Text){
-        		isComment = ((Text)nde).isComment();
-        		if(i == 1)
-        			assertEquals(true, isComment);
-        		else
-        			assertEquals(false, isComment);
-        	}
+
+        assertEquals(5, textNodes.getLength());
+
+        for (int i = 0; i < textNodes.getLength(); i++) {
+            Node node = textNodes.item(i);
+            boolean isComment;
+            isComment = ((Text) node).isComment();
+            if (i == 1 || i == 3) {
+                assertEquals(true, isComment);
+            } else {
+                assertEquals(false, isComment);
+            }
         }
-
-	}
-
-    public static void main(String[] args) throws Exception {
-        TextTest tester = new TextTest("TestEnvelope");
-        tester.testAddTextNode();
-        tester.testComment();
     }
-	
 }

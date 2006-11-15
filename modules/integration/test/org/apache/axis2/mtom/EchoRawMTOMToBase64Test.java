@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,27 +16,31 @@
 
 package org.apache.axis2.mtom;
 
-/**
- * @author <a href="mailto:thilina@opensource.lk">Thilina Gunarathne </a>
- */
-
 import junit.framework.TestCase;
-
+import junit.framework.TestSuite;
+import junit.framework.Test;
+import org.apache.axiom.attachments.ByteArrayDataSource;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.om.OMText;
+import org.apache.axiom.om.impl.llom.OMTextImpl;
+import org.apache.axiom.soap.SOAP12Constants;
+import org.apache.axiom.soap.SOAPEnvelope;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.Constants;
 import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.attachments.ByteArrayDataSource;
-import org.apache.axis2.clientapi.AsyncResult;
-import org.apache.axis2.clientapi.Callback;
-import org.apache.axis2.context.ServiceContext;
-import org.apache.axis2.description.ServiceDescription;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.client.async.AsyncResult;
+import org.apache.axis2.client.async.Callback;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.context.ConfigurationContextFactory;
+import org.apache.axis2.description.AxisService;
 import org.apache.axis2.engine.Echo;
 import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.om.*;
-import org.apache.axis2.om.impl.llom.OMTextImpl;
-import org.apache.axis2.soap.SOAP12Constants;
-import org.apache.axis2.soap.SOAPEnvelope;
-import org.apache.axis2.soap.SOAPFactory;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
 import org.apache.axis2.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,23 +48,19 @@ import org.apache.commons.logging.LogFactory;
 import javax.activation.DataHandler;
 import javax.xml.namespace.QName;
 
-public class EchoRawMTOMToBase64Test extends TestCase {
+public class EchoRawMTOMToBase64Test extends UtilServerBasedTestCase {
     private EndpointReference targetEPR = new EndpointReference("http://127.0.0.1:"
             + (UtilServer.TESTING_PORT)
-            + "/axis/services/EchoXMLService/echoMTOMtoBase64");
+            + "/axis2/services/EchoXMLService/echoMTOMtoBase64");
 
-    private Log log = LogFactory.getLog(getClass());
+	private static final Log log = LogFactory.getLog(EchoRawMTOMToBase64Test.class);
 
     private QName serviceName = new QName("EchoXMLService");
 
     private QName operationName = new QName("echoMTOMtoBase64");
 
-    private ServiceContext serviceContext;
-
-    private ServiceDescription service;
-
     OMText expectedTextData;
-    
+
     private boolean finish = false;
 
     public EchoRawMTOMToBase64Test() {
@@ -71,18 +71,19 @@ public class EchoRawMTOMToBase64Test extends TestCase {
         super(testName);
     }
 
+    public static Test suite() {
+        return getTestSetup(new TestSuite(EchoRawMTOMToBase64Test.class));
+    }
+
     protected void setUp() throws Exception {
-        UtilServer.start();
-        service = Utils.createSimpleService(serviceName, Echo.class.getName(),
+        AxisService service = Utils.createSimpleService(serviceName, Echo.class.getName(),
                 operationName);
         UtilServer.deployService(service);
-        serviceContext = UtilServer.getConfigurationContext()
-                .createServiceContext(service.getName());
     }
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
+        UtilServer.unDeployClientService();
     }
 
     private OMElement createPayload() {
@@ -92,9 +93,9 @@ public class EchoRawMTOMToBase64Test extends TestCase {
         OMElement rpcWrapEle = fac.createOMElement("echoMTOMtoBase64", omNs);
         OMElement data = fac.createOMElement("data", omNs);
         byte[] byteArray = new byte[]{13, 56, 65, 32, 12, 12, 7, -3, -2, -1,
-                                      98};
+                98};
         DataHandler dataHandler = new DataHandler(new ByteArrayDataSource(byteArray));
-        expectedTextData = new OMTextImpl(dataHandler, true);
+        expectedTextData = new OMTextImpl(dataHandler, true, fac);
         data.addChild(expectedTextData);
         rpcWrapEle.addChild(data);
         return rpcWrapEle;
@@ -102,68 +103,65 @@ public class EchoRawMTOMToBase64Test extends TestCase {
 
     public void testEchoXMLASync() throws Exception {
         OMElement payload = createPayload();
+        Options clientOptions = new Options();
+        clientOptions.setTo(targetEPR);
+        clientOptions.setTransportInProtocol(Constants.TRANSPORT_HTTP);
 
-        org.apache.axis2.clientapi.Call call =
-                new org.apache.axis2.clientapi.Call("target/test-resources/intregrationRepo");
-
-
-        call.setTo(targetEPR);
-        call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                Constants.TRANSPORT_HTTP,
-                false);
 
         Callback callback = new Callback() {
             public void onComplete(AsyncResult result) {
                 SOAPEnvelope envelope = result.getResponseEnvelope();
-                
-                OMElement data = (OMElement) envelope.getBody().getFirstElement().getFirstChild();
+
+                OMElement data = (OMElement) envelope.getBody().getFirstElement().getFirstOMChild();
                 compareWithCreatedOMText(data.getText());
                 finish = true;
             }
 
-            public void reportError(Exception e) {
+            public void onError(Exception e) {
                 log.info(e.getMessage());
                 finish = true;
             }
         };
 
-        call.invokeNonBlocking(operationName.getLocalPart(),
-                payload,
-                callback);
+        ConfigurationContext configContext =
+                ConfigurationContextFactory.createConfigurationContextFromFileSystem("target/test-resources/integrationRepo",null);
+        ServiceClient sender = new ServiceClient(configContext, null);
+        sender.setOptions(clientOptions);
+
+        sender.sendReceiveNonBlocking(payload, callback);
+
         int index = 0;
         while (!finish) {
             Thread.sleep(1000);
             index++;
             if (index > 10) {
                 throw new AxisFault(
-                        "Server is shutdown as the Async response take too longs time");
+                        "Server was shutdown as the async response take too long to complete");
             }
         }
-        call.close();
     }
-    
+
     public void testEchoXMLSync() throws Exception {
         for (int i = 0; i < 10; i++) {
-            SOAPFactory fac = OMAbstractFactory.getSOAP11Factory();
-
             OMElement payload = createPayload();
 
-            org.apache.axis2.clientapi.Call call =
-                    new org.apache.axis2.clientapi.Call("target/test-resources/intregrationRepo");
+            Options clientOptions = new Options();
+            clientOptions.setTo(targetEPR);
+            clientOptions.setProperty(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
+            clientOptions.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+            clientOptions.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
 
-            call.setTo(targetEPR);
-            call.set(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
-            call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                    Constants.TRANSPORT_HTTP, false);
-            call.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+            ConfigurationContext configContext =
+                    ConfigurationContextFactory.createConfigurationContextFromFileSystem(null,null);
+            ServiceClient sender = new ServiceClient(configContext, null);
+            sender.setOptions(clientOptions);
 
-            OMElement result = call.invokeBlocking(operationName
-                    .getLocalPart(), payload);
+            OMElement result = sender.sendReceive(payload);
 
-            OMElement data = (OMElement) result.getFirstChild();
+            OMElement data = (OMElement) result.getFirstOMChild();
             compareWithCreatedOMText(data.getText());
-            call.close();
             log.info("" + i);
+            UtilServer.unDeployClientService();
         }
     }
 

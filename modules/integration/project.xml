@@ -22,61 +22,100 @@
 
     <name>Apache Axis 2.0 - Integration</name>
     <id>axis2-integration</id>
-    <groupId>axis2</groupId>
+    <groupId>org.apache.axis2</groupId>
     <description>Integration tests</description>
 
 
     <dependencies>
         <dependency>
-            <groupId>axis2</groupId>
-            <artifactId>axis2-core</artifactId>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-kernel</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
         <dependency>
-            <groupId>axis2</groupId>
+            <groupId>org.apache.axis2</groupId>
             <artifactId>axis2-security</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-secpolicy</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-java2wsdl</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
+          <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-adb-codegen</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
 
         <dependency>
-            <groupId>axis2</groupId>
+            <groupId>org.apache.axis2</groupId>
             <artifactId>axis2-samples</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
-
         <dependency>
-            <groupId>axis2</groupId>
-            <artifactId>axis2-xml</artifactId>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-spring</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
 
         <dependency>
-            <groupId>axis2</groupId>
-            <artifactId>axis2-wsdl</artifactId>
+            <groupId>org.apache.ws.commons.axiom</groupId>
+            <artifactId>axiom-api</artifactId>
+            <version>${axiom.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ws.commons.axiom</groupId>
+            <artifactId>axiom-impl</artifactId>
+            <version>${axiom.version}</version>
+        </dependency>
+		<dependency>
+            <groupId>org.apache.ws.commons.axiom</groupId>
+            <artifactId>axiom-dom</artifactId>
+            <version>${axiom.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-adb</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
         <dependency>
-            <groupId>axis2</groupId>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-codegen</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-xmlbeans</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.axis2</groupId>
             <artifactId>axis2-addressing</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
         <dependency>
-            <groupId>axis2</groupId>
+            <groupId>org.apache.axis2</groupId>
             <artifactId>axis2-tools</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
         <dependency>
-            <groupId>axis2</groupId>
-            <artifactId>axis2-common</artifactId>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-rahas</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
-        
 
         <!-- external JARs -->
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-            <version>1.0.3</version>
+            <version>${commons.logging.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -84,7 +123,7 @@
         <dependency>
             <groupId>groovy</groupId>
             <artifactId>groovy-all</artifactId>
-            <version>1.0-jsr-01</version>
+            <version>${groovy.all.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -93,15 +132,7 @@
         <dependency>
             <groupId>commons-httpclient</groupId>
             <artifactId>commons-httpclient</artifactId>
-            <version>3.0-rc3</version>
-            <properties>
-                <module>true</module>
-            </properties>
-        </dependency>
-        <dependency>
-            <groupId>commons-discovery</groupId>
-            <artifactId>commons-discovery</artifactId>
-            <version>0.2</version>
+            <version>${commons.httpclient.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -109,24 +140,23 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.3</version>
+            <version>${commons.codec.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.8</version>
+            <groupId>httpcomponents-httpcore</groupId>
+            <artifactId>jakarta-httpcore</artifactId>
+            <version>${jakarta.httpcore.version}</version>
             <properties>
                 <module>true</module>
             </properties>
-            <url>http://dist.codehaus.org/stax/jars/</url>
-        </dependency>
+        </dependency> 
         <dependency>
-            <groupId>stax</groupId>
-            <artifactId>stax</artifactId>
-            <version>1.1.2-dev</version>
+            <groupId>${stax.impl.groupid}</groupId>
+            <artifactId>${stax.impl.artifactid}</artifactId>
+            <version>${stax.impl.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -134,31 +164,31 @@
         <dependency>
             <groupId>stax</groupId>
             <artifactId>stax-api</artifactId>
-            <version>1.0</version>
+            <version>${stax.api.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
         <dependency>
-            <groupId>axis</groupId>
-            <artifactId>axis-wsdl4j</artifactId>
-            <version>1.2</version>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>${wsdl4j.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
         <dependency>
-            <groupId>geronimo-spec</groupId>
-            <artifactId>geronimo-spec-javamail</artifactId>
-            <version>1.3.1-rc5</version>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+            <version>${javamail.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
         <dependency>
-            <groupId>geronimo-spec</groupId>
-            <artifactId>geronimo-spec-activation</artifactId>
-            <version>1.0.2-rc4</version>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+            <version>${activation.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -166,7 +196,7 @@
         <dependency>
             <groupId>xmlbeans</groupId>
             <artifactId>xbean</artifactId>
-            <version>2.0.0-beta1</version>
+            <version>${xbean.version}</version>
             <type>jar</type>
             <properties>
                 <module>true</module>
@@ -175,13 +205,13 @@
         <dependency>
             <groupId>maven-itest-plugin</groupId>
             <artifactId>maven-itest-plugin</artifactId>
-            <version>1.0</version>
+            <version>${maven.itest.plugin.version}</version>
             <type>plugin</type>
         </dependency>
         <dependency>
             <groupId>wss4j</groupId>
             <artifactId>wss4j</artifactId>
-            <version>SNAPSHOT</version>
+            <version>${wss4j.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -189,7 +219,7 @@
         <dependency>
             <groupId>xml-security</groupId>
             <artifactId>xmlsec</artifactId>
-            <version>1.2.1</version>
+            <version>${xmlsec.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -197,7 +227,7 @@
         <dependency>
             <groupId>bouncycastle</groupId>
             <artifactId>bcprov</artifactId>
-            <version>jdk13-128</version>
+            <version>${bcprov.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -205,7 +235,7 @@
         <dependency>
             <groupId>opensaml</groupId>
             <artifactId>opensaml</artifactId>
-            <version>1.0.1</version>
+            <version>${opensaml.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -213,31 +243,23 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>3.8.1</version>
+            <version>${junit.version}</version>
                 <properties>
                     <classloader>root</classloader>
             </properties>
         </dependency>
         <dependency>
-            <groupId>xerces</groupId>
-            <artifactId>xmlParserAPIs</artifactId>
-            <version>2.6.2</version>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+            <version>${xml_apis.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
         <dependency>
             <groupId>xerces</groupId>
-            <artifactId>xmlParserAPIs</artifactId>
-            <version>2.6.2</version>
-            <properties>
-                <module>true</module>
-            </properties>
-        </dependency>
-        <dependency>
-            <groupId>xalan</groupId>
-            <artifactId>xalan</artifactId>
-            <version>2.6.0</version>
+            <artifactId>xercesImpl</artifactId>
+            <version>${xerces.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -245,11 +267,109 @@
         <dependency>
             <groupId>jaxen</groupId>
             <artifactId>jaxen</artifactId>
-            <version>1.1-beta-7</version>
+            <version>${jaxen.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
+        <dependency>
+            <groupId>xalan</groupId>
+            <artifactId>xalan</artifactId>
+            <version>${xalan.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+         <!--for java2wsdl generation we use JAM , so there should be a dependency on the annogen jar or-->
+        <!--XML Beans-->
+         <dependency>
+            <groupId>annogen</groupId>
+            <artifactId>annogen</artifactId>
+            <version>${annogen.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+         <dependency>
+            <groupId>org.apache.ws.commons.schema</groupId>
+            <artifactId>XmlSchema</artifactId>
+            <version>${XmlSchema.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>backport-util-concurrent</groupId>
+            <artifactId>backport-util-concurrent</artifactId>
+            <version>${backport_util_concurrent.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.neethi</groupId>
+            <artifactId>neethi</artifactId>
+            <version>${neethi.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+        <dependency>
+            <groupId>xmlunit</groupId>
+            <artifactId>xmlunit</artifactId>
+            <version>${xmlunit.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+	  <dependency>
+            <groupId>incubator-woden</groupId>
+            <artifactId>woden</artifactId>
+            <version>${woden.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+	<dependency>
+	  <groupId>log4j</groupId>
+	  <artifactId>log4j</artifactId>
+	  <version>${log4j.version}</version>
+	</dependency>
+        <dependency>
+          <groupId>incubator-activemq</groupId>
+          <artifactId>incubator-activemq</artifactId>
+          <version>4.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>${spring.version}</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+
 
     </dependencies>
 
@@ -258,19 +378,34 @@
         <nagEmailAddress>axis-dev@ws.apache.org</nagEmailAddress>
         <sourceDirectory>src</sourceDirectory>
         <unitTestSourceDirectory>test</unitTestSourceDirectory>
-
+    <sourceModifications>
+      <sourceModification>
+        <className>fakeClazz</className>
+        <property/>
+        <directory/>
+        <includes/>
+        <excludes>
+            <exclude>**/SOAP12Testing/**/*.java</exclude>
+        </excludes>
+      </sourceModification>
+    </sourceModifications>
         <unitTest>
-            <excludes>
-                <exclude>**/*Abstract*.java</exclude>
-                <exclude>**/*Util*.java</exclude>
-                <exclude>**/*InteropStubTest.java</exclude>
-                <exclude>**org/apache/axis2/mail/*.java</exclude>
-                <exclude>**org/apache/axis2/soap12testing/soap12testsuite/*.java</exclude>
-                <exclude>**/ScenarioST1Test.java</exclude>
-            </excludes>
             <includes>
-                <include>**/*Test.java</include>
+                <include>**/*Test.class</include>
             </includes>
+            <excludes>
+                <exclude>**/*Abstract*.class</exclude>
+                <exclude>**/*Util*.class</exclude>
+                <exclude>**/*InteropStubTest.class</exclude>
+                <exclude>**/*EchoRawSwAFileInputTest.class</exclude>
+                <exclude>**org/apache/axis2/mail/*.class</exclude>
+		<exclude>**org/apache/axis2/transport/DualChannelRequestResponseRawXMLTest.class</exclude>
+                <exclude>**org/apache/axis2/soap12testing/soap12testsuite/*.class</exclude>
+                <exclude>**/ScenarioST1Test.class</exclude>
+                <exclude>**/samples/wsdl/perf2/*.class</exclude>
+
+
+            </excludes>
 
             <resources>
                 <resource>
@@ -304,6 +439,7 @@
                 <includes>
                     <include>**/*.properties</include>
                     <include>**/*.xml</include>
+
                 </includes>
             </resource>
             <resource>
@@ -312,7 +448,7 @@
                     <include>**/*.jpg</include>
                 </includes>
             </resource>
- 	    <resource>
+        <resource>
                 <directory>test</directory>
                 <includes>
                     <include>**/*.bin</include>

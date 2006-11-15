@@ -22,30 +22,29 @@ import org.apache.axis2.handlers.AbstractHandler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.xml.namespace.QName;
-
 public class SpeakingHandler extends AbstractHandler implements Handler {
-    private Log log = LogFactory.getLog(getClass());
+    private static final Log log = LogFactory.getLog(SpeakingHandler.class);
     private String message;
-    private QName name;
+    private String name;
 
     public SpeakingHandler() {
         this.message = "Hi I amtesting ";
     }
 
-    public QName getName() {
+    public String getName() {
         return name;
     }
 
-    public void invoke(MessageContext msgContext) throws AxisFault {
+    public InvocationResponse invoke(MessageContext msgContext) throws AxisFault {
         log.info("I am " + message + " Handler Running :)");
+        return InvocationResponse.CONTINUE;        
     }
 
     public void revoke(MessageContext msgContext) {
         log.info("I am " + message + " Handler Running :)");
     }
 
-    public void setName(QName name) {
+    public void setName(String name) {
         this.name = name;
     }
 

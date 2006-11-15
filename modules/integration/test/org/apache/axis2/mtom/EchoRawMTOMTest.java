@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,59 +16,53 @@
 
 package org.apache.axis2.mtom;
 
-/**
- * @author <a href="mailto:thilina@opensource.lk">Thilina Gunarathne </a>
- */
-
 import java.awt.Image;
 import java.io.InputStream;
 
 import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
+import javax.imageio.ImageIO;
 import javax.xml.namespace.QName;
 
+import junit.framework.Test;
 import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.om.OMText;
+import org.apache.axiom.om.impl.llom.OMTextImpl;
+import org.apache.axiom.soap.SOAP12Constants;
+import org.apache.axiom.soap.SOAPEnvelope;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.Constants;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.attachments.utils.ImageDataSource;
-import org.apache.axis2.attachments.utils.ImageIO;
-import org.apache.axis2.clientapi.AsyncResult;
-import org.apache.axis2.clientapi.Callback;
-import org.apache.axis2.context.ServiceContext;
-import org.apache.axis2.description.ServiceDescription;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.client.async.AsyncResult;
+import org.apache.axis2.client.async.Callback;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.context.ConfigurationContextFactory;
+import org.apache.axis2.context.MessageContext;
+import org.apache.axis2.description.AxisService;
 import org.apache.axis2.engine.Echo;
+import org.apache.axis2.engine.util.TestConstants;
 import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.om.OMAbstractFactory;
-import org.apache.axis2.om.OMElement;
-import org.apache.axis2.om.OMFactory;
-import org.apache.axis2.om.OMNamespace;
-import org.apache.axis2.om.OMText;
-import org.apache.axis2.om.impl.llom.OMTextImpl;
-import org.apache.axis2.soap.SOAP12Constants;
-import org.apache.axis2.soap.SOAPEnvelope;
-import org.apache.axis2.soap.SOAPFactory;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
 import org.apache.axis2.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class EchoRawMTOMTest extends TestCase {
-    private EndpointReference targetEPR = new EndpointReference("http://127.0.0.1:"
-            + (UtilServer.TESTING_PORT)
-            + "/axis/services/EchoXMLService/echoOMElement");
+public class EchoRawMTOMTest extends UtilServerBasedTestCase implements TestConstants {
 
-    private Log log = LogFactory.getLog(getClass());
 
-    private QName serviceName = new QName("EchoXMLService");
+	private static final Log log = LogFactory.getLog(EchoRawMTOMTest.class);
 
-    private QName operationName = new QName("echoOMElement");
-
-    private ServiceContext serviceContext;
-
-    private ServiceDescription service;
+    private AxisService service;
 
     private OMTextImpl expectedTextData;
-    
+
     private boolean finish = false;
 
     public EchoRawMTOMTest() {
@@ -79,18 +73,19 @@ public class EchoRawMTOMTest extends TestCase {
         super(testName);
     }
 
+    public static Test suite() {
+        return getTestSetup2(new TestSuite(EchoRawMTOMTest.class),Constants.TESTING_PATH + "MTOM-enabledRepository");
+    }
+
     protected void setUp() throws Exception {
-        UtilServer.start(Constants.TESTING_PATH + "MTOM-enabledRepository");
         service = Utils.createSimpleService(serviceName, Echo.class.getName(),
                 operationName);
         UtilServer.deployService(service);
-        serviceContext = UtilServer.getConfigurationContext()
-                .createServiceContext(service.getName());
     }
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
+        UtilServer.unDeployClientService();
     }
 
     protected OMElement createEnvelope() throws Exception {
@@ -100,95 +95,109 @@ public class EchoRawMTOMTest extends TestCase {
         OMNamespace omNs = fac.createOMNamespace("http://localhost/my", "my");
         OMElement rpcWrapEle = fac.createOMElement("echoOMElement", omNs);
         OMElement data = fac.createOMElement("data", omNs);
-        Image expectedImage;
-        expectedImage =
-                new ImageIO()
-                .loadImage(getResourceAsStream("org/apache/axis2/mtom/test.jpg"));
-        ImageDataSource dataSource = new ImageDataSource("test.jpg",
-                expectedImage);
-        expectedDH = new DataHandler(dataSource);
-        expectedTextData = new OMTextImpl(expectedDH, true);
+        FileDataSource fileDataSource = new FileDataSource("test-resources/mtom/test.jpg");
+        expectedDH = new DataHandler(fileDataSource);
+        expectedTextData = new OMTextImpl(expectedDH, true, fac);
         data.addChild(expectedTextData);
         rpcWrapEle.addChild(data);
         return rpcWrapEle;
 
     }
+
     public void testEchoXMLASync() throws Exception {
         OMElement payload = createEnvelope();
-
-        org.apache.axis2.clientapi.Call call = new org.apache.axis2.clientapi.Call(
-                "target/test-resources/intregrationRepo" );
-
-        call.setTo(targetEPR);
-        call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                Constants.TRANSPORT_HTTP,
-                false);
+        Options options = new Options();
+        options.setTo(targetEPR);
+        options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+        options.setProperty(Constants.Configuration.CHARACTER_SET_ENCODING, MessageContext.UTF_16);
 
         Callback callback = new Callback() {
             public void onComplete(AsyncResult result) {
                 SOAPEnvelope envelope = result.getResponseEnvelope();
-                
-                OMElement ele = (OMElement) envelope.getBody().getFirstElement().getFirstChild();
-                OMText binaryNode = (OMText) ele.getFirstChild();
-                
+
+                OMElement ele = (OMElement) envelope.getBody().getFirstElement().getFirstOMChild();
+                OMText binaryNode = (OMText) ele.getFirstOMChild();
+
                 // to the assert equal
                 compareWithCreatedOMText(binaryNode);
                 finish = true;
             }
 
-            public void reportError(Exception e) {
+            public void onError(Exception e) {
                 log.info(e.getMessage());
                 finish = true;
             }
         };
+        ConfigurationContext configContext =
+                ConfigurationContextFactory.createConfigurationContextFromFileSystem("target/test-resources/integrationRepo",null);
+        ServiceClient sender = new ServiceClient(configContext, null);
+        options.setAction(Constants.AXIS2_NAMESPACE_URI+"/"+operationName.getLocalPart());
+        sender.setOptions(options);
 
-        call.invokeNonBlocking(operationName.getLocalPart(),
-                payload,
-                callback);
+        sender.sendReceiveNonBlocking(payload, callback);
+
         int index = 0;
         while (!finish) {
             Thread.sleep(1000);
             index++;
             if (index > 10) {
                 throw new AxisFault(
-                        "Server is shutdown as the Async response take too longs time");
+                        "Server was shutdown as the async response take too long to complete");
             }
         }
-        call.close();
     }
-    
+
     public void testEchoXMLSync() throws Exception {
-        SOAPFactory fac = OMAbstractFactory.getSOAP11Factory();
-
         OMElement payload = createEnvelope();
-
-        org.apache.axis2.clientapi.Call call =
-                new org.apache.axis2.clientapi.Call("target/test-resources/intregrationRepo");
-        call.setTo(targetEPR);
-        call.set(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
-        call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                Constants.TRANSPORT_HTTP, false);
-        call.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
-
-        OMElement result = call.invokeBlocking(operationName
-                .getLocalPart(),
-                payload);
-        // result.serializeWithCache(new
-        // OMOutput(XMLOutputFactory.newInstance().createXMLStreamWriter(System.out)));
-        OMElement ele = (OMElement) result.getFirstChild();
-        OMText binaryNode = (OMText) ele.getFirstChild();
+        Options options = new Options();
+        options.setTo(targetEPR);
+        options.setProperty(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
+        options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+        options.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+        ConfigurationContext configContext =
+                ConfigurationContextFactory.createConfigurationContextFromFileSystem("target/test-resources/integrationRepo",null);
         
+        ServiceClient sender = new ServiceClient(configContext,null);
+        options.setAction(Constants.AXIS2_NAMESPACE_URI+"/"+operationName.getLocalPart());
+        sender.setOptions(options);
+        options.setTo(targetEPR);
+        OMElement result = sender.sendReceive(payload);
+
+        OMElement ele = (OMElement) result.getFirstOMChild();
+        OMText binaryNode = (OMText) ele.getFirstOMChild();
+
         // to the assert equal
         compareWithCreatedOMText(binaryNode);
-        
+
         // Save the image
         DataHandler actualDH;
-        actualDH = binaryNode.getDataHandler();
-        Image actualObject = new ImageIO().loadImage(actualDH.getDataSource()
+        actualDH = (DataHandler) binaryNode.getDataHandler();
+       ImageIO.read(actualDH.getDataSource()
                 .getInputStream());
-//        FileOutputStream imageOutStream = new FileOutputStream("target/testout.jpg");
-//        new ImageIO().saveImage("image/jpeg", actualObject, imageOutStream);
+    }
+    
+    public void testEchoXMLSyncSeperateListener() throws Exception {
+        OMElement payload = createEnvelope();
+        Options options = new Options();
+        options.setTo(targetEPR);
+        options.setProperty(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
+        options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+        options.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+        ConfigurationContext configContext =
+                ConfigurationContextFactory.createConfigurationContextFromFileSystem("target/test-resources/integrationRepo",null);
+        
+        ServiceClient sender = new ServiceClient(configContext,null);
+        sender.engageModule( new QName("addressing"));
+        options.setAction(Constants.AXIS2_NAMESPACE_URI+"/"+operationName.getLocalPart());
+        sender.setOptions(options);
+        options.setUseSeparateListener(true);
+        options.setTo(targetEPR);
+        OMElement result = sender.sendReceive(payload);
 
+        OMElement ele = (OMElement) result.getFirstOMChild();
+        OMText binaryNode = (OMText) ele.getFirstOMChild();
+        // to the assert equal
+        compareWithCreatedOMText(binaryNode);
     }
 
     protected InputStream getResourceAsStream(String path) {

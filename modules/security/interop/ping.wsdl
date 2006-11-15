@@ -51,7 +51,7 @@
     <binding name="PingBinding" type="tns:PingPort">
         <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
         <operation name="Ping">
-            <soap:operation soapAction="Ping" style="document"/>
+            <soap:operation soapAction="urn:Ping" style="document"/>
             <input>
                 <soap:body use="literal"/>
             </input>
@@ -60,7 +60,7 @@
             </output>
         </operation>
     </binding>
-    <service name="PingService">
+    <service name="PingPort">
         <port name="Ping1" binding="tns:PingBinding">
             <soap:address location="http://localhost:9080/pingservice/Ping1"/>
         </port>

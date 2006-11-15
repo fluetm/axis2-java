@@ -1,5 +1,3 @@
-package org.apache.axis2.soap12testing.handlers;
-
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
  *
@@ -14,20 +12,14 @@ package org.apache.axis2.soap12testing.handlers;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * 
  */
 
-/**
- * Author : Deepal Jayasinghe
- * Date: Jul 26, 2005
- * Time: 2:55:18 PM
- */
+package org.apache.axis2.soap12testing.handlers;
 
 import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.soap.SOAPHeaderBlock;
-import org.apache.axis2.soap.SOAPHeader;
 import org.apache.axis2.handlers.AbstractHandler;
+import org.apache.axiom.soap.SOAPHeader;
+import org.apache.axiom.soap.SOAPHeaderBlock;
 
 import java.util.Iterator;
 
@@ -38,10 +30,10 @@ public class SOAP12OutFaultFlowHandlerDefault extends AbstractHandler {
 
     }
 
-    public void invoke(MessageContext msgContext) {
-        Integer headerBlockPresent = (Integer) msgContext.getOperationContext().getProperty("HEADER_BLOCK_PRESENT", true);
+    public InvocationResponse invoke(MessageContext msgContext) {
+        Integer headerBlockPresent = (Integer) msgContext.getOperationContext().getProperty("HEADER_BLOCK_PRESENT");
         if (headerBlockPresent.equals(new Integer(1))) {
-            SOAPHeader headerAdd = (SOAPHeader) msgContext.getOperationContext().getProperty("HEADER_BLOCK", true);
+            SOAPHeader headerAdd = (SOAPHeader) msgContext.getOperationContext().getProperty("HEADER_BLOCK");
            Iterator headerBlocks = headerAdd.examineAllHeaderBlocks();
             while(headerBlocks.hasNext()){
                 SOAPHeaderBlock headerBlock=(SOAPHeaderBlock) headerBlocks.next();
@@ -50,6 +42,7 @@ public class SOAP12OutFaultFlowHandlerDefault extends AbstractHandler {
         } else {
             msgContext.getEnvelope().getHeader().discard();
         }
+        return InvocationResponse.CONTINUE;
     }
 }
 

@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,13 +18,13 @@ package org.apache.axis2.engine;
 
 //todo
 
-import junit.framework.TestCase;
-import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.description.ModuleDescription;
-import org.apache.axis2.description.OperationDescription;
-import org.apache.axis2.description.ServiceDescription;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.apache.axis2.description.*;
 import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.transport.http.SimpleHTTPServer;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
+import org.apache.axis2.receivers.RawXMLINOnlyMessageReceiver;
+import org.apache.axis2.receivers.RawXMLINOutMessageReceiver;
 import org.apache.axis2.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,17 +36,13 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.net.Socket;
 
-public class MessageWithServerTest extends TestCase {
-    private Log log = LogFactory.getLog(getClass());
+public class MessageWithServerTest extends UtilServerBasedTestCase {
+    private static final Log log = LogFactory.getLog(MessageWithServerTest.class);
     private QName serviceName = new QName("", "EchoService");
     private QName operationName =
             new QName("http://ws.apache.org/axis2", "echoVoid");
-    private QName transportName = new QName("", "NullTransport");
 
-    private AxisConfiguration engineRegistry;
-    private MessageContext mc;
-    private Thread thisThread;
-    private SimpleHTTPServer sas;
+    private AxisConfiguration config;
     private ClassLoader cl;
 
     public MessageWithServerTest(String testName) {
@@ -54,35 +50,69 @@ public class MessageWithServerTest extends TestCase {
         cl = Thread.currentThread().getContextClassLoader();
     }
 
+    public static Test suite() {
+        return getTestSetup(new TestSuite(MessageWithServerTest.class));
+    }
+
+
     protected void setUp() throws Exception {
-        UtilServer.start();
-        ServiceDescription service = Utils.createSimpleService(serviceName,
+        AxisService service = Utils.createSimpleService(serviceName,
                 Echo.class.getName(),
                 operationName);
 
-
-        service.setInFlow(new MockFlow("service inflow", 4));
-        service.setOutFlow(new MockFlow("service outflow", 5));
         //service.setFaultInFlow(new MockFlow("service faultflow", 1));
 
-        ModuleDescription m1 = new ModuleDescription(
-                new QName("", "A Mdoule 1"));
+        AxisModule m1 = new AxisModule(
+                new QName("", "A Module 1"));
         m1.setInFlow(new MockFlow("service module inflow", 4));
         //m1.setFaultInFlow(new MockFlow("service module faultflow", 1));
-        engineRegistry = new AxisConfigurationImpl();
-        service.engageModule(m1,engineRegistry);
+        config = new AxisConfiguration();
+        config.addMessageReceiver(
+                "http://www.w3.org/2004/08/wsdl/in-only", new RawXMLINOnlyMessageReceiver());
+        config.addMessageReceiver(
+                "http://www.w3.org/2004/08/wsdl/in-out", new RawXMLINOutMessageReceiver());
 
-        OperationDescription operation = new OperationDescription(
-                operationName);
-        service.addOperation(operation);
+        DispatchPhase dispatchPhase = new DispatchPhase();
+
+        dispatchPhase.setName("Dispatch");
+
+        AddressingBasedDispatcher abd = new AddressingBasedDispatcher();
+
+        abd.initDispatcher();
+
+        RequestURIBasedDispatcher rud = new RequestURIBasedDispatcher();
+
+        rud.initDispatcher();
+
+        SOAPActionBasedDispatcher sabd = new SOAPActionBasedDispatcher();
+
+        sabd.initDispatcher();
+
+        SOAPMessageBodyBasedDispatcher smbd = new SOAPMessageBodyBasedDispatcher();
+
+        smbd.initDispatcher();
+
+        InstanceDispatcher id = new InstanceDispatcher();
+
+        id.init(new HandlerDescription("InstanceDispatcher"));
+        dispatchPhase.addHandler(abd);
+        dispatchPhase.addHandler(rud);
+        dispatchPhase.addHandler(sabd);
+        dispatchPhase.addHandler(smbd);
+        dispatchPhase.addHandler(id);
+        config.getGlobalInFlow().add(dispatchPhase);
+        service.engageModule(m1, config);
+
+        AxisOperation axisOperation = new OutInAxisOperation(
+        );
+        axisOperation.setName(operationName);
+        service.addOperation(axisOperation);
 
         UtilServer.deployService(service);
-        UtilServer.start();
     }
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
     }
 
     public void testEchoStringServer() throws Exception {

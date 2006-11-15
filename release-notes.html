@@ -1,58 +1,116 @@
 <html>
-<head></head>
-<body>
-<h1>Axis2 Release Notes</h1>
+<head>
+  <meta http-equiv="content-type" content="">
+  <title>Welcome to Apache Axis2 version 1.1</title>
+</head>
 
-This is the 0.91 release of the Apache Axis2.
+<body lang="en">
+<h1>Welcome to Apache Axis2 version 1.1</h1>
 
-<h2>What's in this release?</h2>
+<h3>@TODAY@</h3>
 
-<p>This release includes the following features:</p>
-<ul>
-  <li>Complete XML infoset support for AXIOM</li>
-  <li>AXIOM, a SOAP specific streaming XML infoset model for SOAP 1.1/1.2 Messages</li>
-  <li>Support for One-Way Messaging and Request Response Messaging</li>
-  <li>Modules, mechanism to extend the SOAP Processing Model</li>
-  <li>Archives based deployment Model </li>
-  <li>WSDL Code Generation Tool for Stub and skeltons</li>
-  <li>XML Beans based data binding support</li>
-  <li>Support for WS-Addressing, both the submission and final versions</li>
-  <li>Client API</li>
-  <li>REST Web Service Support</li>
-  <li>HTTP transport Support</li>
-  <li>SMTP transport Support</li>
-  <li>TCP transport Support</li>
-  <li>MTOM/SWA attachments support</li>
-  <li>SAAJ implementation</li>
-  <li>and numerous bug fixes after 0.9 release </li>
-</ul>
+<pre>Just over 6 months since the original 1.0 release, we are very proud to
+announce the release of Apache Axis2 version 1.1.
 
-<p>The release include following tools</p>
-<ol>
-	<LI>Admin Web App</LI>
-	<LI>WSDL2WS, eclipe Plugin/Command line version</LI>
-	<LI>Service Archive Wizard, eclipe Plugin</LI>
-	<LI>Module Archive Wizard, eclipe Plugin</LI>
-</ol>
+Downloads are available at:
+    http://ws.apache.org/axis2/download.cgi
 
-<h2>What's still to do?</h2>
+Apache Axis2 is a complete re-design and re-write of the widely used
+Apache Axis engine and is a more efficient, more scalable, more modular
+and more XML-oriented Web services framework. It is carefully designed to
+support the easy addition of plug-in "modules" that extend its
+functionality for features such as security and reliability.
 
-<p>Please see a list of what we think needs doing - and please consider helping out if 
-you're interested & able!</p>
-<ul>
-    <li>SOAP 1.1 and 1.2 validation </li>
-    <li> JAX-RPC 1.1/2.0 compliance</li> 
-    <li> Implementation of other transports. e.g. JMS..</li> 
-    <li> Web Service Policy Support</li> 
-</ul>
+Modules supporting WS-Security/Secure-Conversation (Apache Rampart),
+WS-Trust (Apache Rahas), WS-Reliable Messaging (Apache Sandesha) and
+WS-Eventing (Apache Savan) will be available soon after the Apache Axis2
+1.1 release. Please see these projects' own sites for further information.
 
-<p>Axis2 is taking shape, this 0.91 release is a glimpse of 1.0 that should be comming soon. 
-If you happen to have vision of how the next generation of the Web Service should be, and like to contribute to 
-Apache Axis2 please help us to shape the Apache Axis2. Any contribution in the form of Coding, testing, submiting 
-improvements to the documentation, and reporting bugs are always welcome.</p>
-<p>Thanks for your interest in Axis2!</p>
--- The Axis Development Team
+Major Changes Since 1.0:
+- Significantly improved documentation
+- Significantly improved support for POJO services and clients
+- Significantly improved support for Spring services
+- Significantly improved Axis Data Binding (ADB) to increase schema
+  coverage and overall stability
+- Improved service lifecycle model
+- Improved JMS support
+- Improved handler and module interfaces
+- Improved Eclipse and Idea plugins
+- New Attachments API for sending & receiving MTOM and SwA attachments
+- Built in support for WS-Policy via Apache Neethi
+- Added support for unwrapping Web service requests
+- Fixed tons of small and not-so-small bugs
+- Major refactoring of release structure to make usage easy
+
+Known Issues and Limitations in 1.1 Release:
+- Unwrapping of response messages (coming in 1.2)
+- JSR 181/183 Annotation support (coming in 1.2)
+- JaxMe and JAXBRI data binding support is experimental
+- Simple Axis Server does not support POX/REST
+
+Apache Axis2 1.1 is a major new release compared to Axis2 1.0. We are
+striving for a simple and happy first time user experience as well as a
+satisfying experienced user experience with this release. We welcome any
+and all feedback at:
+    axis-user@ws.apache.org (please include "[axis2]" in the subject)
+    axis-dev@ws.apache.org (please include "[axis2]" in the subject)
+    http://issues.apache.org/jira/browse/AXIS2
+
+Thank you for your interest in Apache Axis2!
+
+The Axis2 Development Team
+http://ws.apache.org/axis2/
+
+------------------------------------------------------------------------------------
+
+Features of Apache Axis2:
+
+Programming Model
+   - Simple XML-centric client API with full WSDL and policy support
+   - Support for POJO and Spring services and clients
+   - Support for any message exchange pattern (MEP)
+   - Synchronous and asynchronous programming model
+   - Archived service deployment model supporting full service
+     encapsulation with versioning support
+   - Archived module deployment model supporting controlled
+     extensibility with versioning support
+   - Hot deployment
+   - WS-Policy driven code generation extensions
+   - Flexible service life cycle model
+   - Automatic support for POX (REST) style invocation of services
+   - Support for querying service's WSDL (with ?wsdl), schema (with
+     ?xsd) and policies (with ?policy)
+
+Supported Specifications
+   - SOAP 1.1 and 1.2
+   - Message Transmission Optimization Mechanism (MTOM)
+   - XML Optimized Packaging (XOP)
+   - SOAP with Attachments
+   - WSDL 1.1, including both SOAP and HTTP bindings
+   - WS-Addressing submission and 1.0
+   - WS-Policy
+   - SAAJ 1.1
+
+Transports
+   - HTTP
+   - SMTP
+   - JMS
+   - TCP
+
+Supported Data Bindings
+   - Axis Data Binding (ADB)
+   - XMLBeans
+   - JibX
+   - JaxMe (Experimental)
+   - JaxBRI (Experimental)
+
+Tools
+   - WSDL2Java: Generate Java stubs and skeletons from a WSDL document.
+   - Java2WSDL: Generate a WSDL document from a Java class.
+   - Eclipse Plugins
+   - IntelliJ Idea Plugins
+   - Maven2 Plugins
+   - Web application for administering Apache Axis2
+    </pre>
 </body>
 </html>
-
- 

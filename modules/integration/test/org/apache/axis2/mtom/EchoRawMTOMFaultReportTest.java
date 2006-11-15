@@ -16,70 +16,66 @@
 
 package org.apache.axis2.mtom;
 
-import junit.framework.TestCase;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.params.HttpMethodParams;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
-import org.apache.axis2.context.ServiceContext;
-import org.apache.axis2.description.ServiceDescription;
-import org.apache.axis2.description.ParameterImpl;
-import org.apache.axis2.description.OperationDescription;
-import org.apache.axis2.swa.EchoRawSwATest;
-import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.Constants;
-import org.apache.axis2.receivers.AbstractMessageReceiver;
-import org.apache.axis2.receivers.RawXMLINOutMessageReceiver;
-import org.apache.wsdl.WSDLService;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 import javax.xml.namespace.QName;
-import java.io.*;
 
-/**
- * Author: Saminda Abeyruwan <saminda@wso2.com>
- */
-public class EchoRawMTOMFaultReportTest extends TestCase {
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
-    private Log log = LogFactory.getLog(getClass());
+import org.apache.axis2.Constants;
+import org.apache.axis2.description.AxisOperation;
+import org.apache.axis2.description.AxisService;
+import org.apache.axis2.description.OutInAxisOperation;
+import org.apache.axis2.description.Parameter;
+import org.apache.axis2.integration.UtilServer;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
+import org.apache.axis2.receivers.RawXMLINOutMessageReceiver;
+import org.apache.axis2.wsdl.WSDLConstants;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpMethodRetryHandler;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.NoHttpResponseException;
+import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+
+public class EchoRawMTOMFaultReportTest extends UtilServerBasedTestCase {
 
     private QName serviceName = new QName("EchoService");
 
     private QName operationName = new QName("mtomSample");
 
-    private ServiceContext serviceContext;
-
-    private ServiceDescription service;
-
     public EchoRawMTOMFaultReportTest() {
-        super(EchoRawSwATest.class.getName());
+        super(EchoRawMTOMFaultReportTest.class.getName());
     }
 
     public EchoRawMTOMFaultReportTest(String testName) {
         super(testName);
     }
 
+    public static Test suite() {
+        return getTestSetup2(new TestSuite(EchoRawMTOMFaultReportTest.class), Constants.TESTING_PATH + "MTOM-enabledRepository");
+    }
+
+
     protected void setUp() throws Exception {
-        UtilServer.start(Constants.TESTING_PATH + "MTOM-enabledRepository");
-        service = new ServiceDescription(serviceName);
+        AxisService service = new AxisService(serviceName.getLocalPart());
         service.setClassLoader(Thread.currentThread().getContextClassLoader());
-        service.addParameter(new ParameterImpl(AbstractMessageReceiver.SERVICE_CLASS,
+        service.addParameter(new Parameter(Constants.SERVICE_CLASS,
                 EchoService.class.getName()));
 
-        OperationDescription axisOp = new OperationDescription(operationName);
+        AxisOperation axisOp = new OutInAxisOperation(operationName);
         axisOp.setMessageReceiver(new RawXMLINOutMessageReceiver());
-        axisOp.setStyle(WSDLService.STYLE_DOC);
+        axisOp.setStyle(WSDLConstants.STYLE_DOC);
         service.addOperation(axisOp);
         UtilServer.deployService(service);
-        serviceContext = UtilServer.getConfigurationContext()
-                .createServiceContext(service.getName());
-
     }
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
     }
 
     public void testEchoFaultSync() throws Exception {
@@ -87,7 +83,7 @@ public class EchoRawMTOMFaultReportTest extends TestCase {
 
         PostMethod httppost = new PostMethod("http://127.0.0.1:"
                 + (UtilServer.TESTING_PORT)
-                + "/axis/services/EchoService/mtomSample");
+                + "/axis2/services/EchoService/mtomSample");
 
         HttpMethodRetryHandler myretryhandler = new HttpMethodRetryHandler() {
             public boolean retryMethod(final HttpMethod method,
@@ -109,7 +105,7 @@ public class EchoRawMTOMFaultReportTest extends TestCase {
         httppost.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
                 myretryhandler);
         httppost.setRequestEntity(new InputStreamRequestEntity(
-                this.getResourceAsStream("/org/apache/axis2/mtom/wmtom.bin")));
+                new FileInputStream("test-resources/mtom/wmtom.bin")));
 
         httppost.setRequestHeader("Content-Type",
                 "multipart/related; boundary=--MIMEBoundary258DE2D105298B756D; type=\"application/xop+xml\"; start=\"<0.15B50EF49317518B01@apache.org>\"; start-info=\"application/soap+xml\"");
@@ -121,13 +117,9 @@ public class EchoRawMTOMFaultReportTest extends TestCase {
                 assertEquals("HTTP/1.1 500 Internal server error",
                         httppost.getStatusLine().toString());
             }
-
+        } catch (NoHttpResponseException e) {
         } finally {
             httppost.releaseConnection();
         }
-    }
-
-    private InputStream getResourceAsStream(String path) {
-        return this.getClass().getResourceAsStream(path);
     }
 }

@@ -11,15 +11,27 @@
       <library name="Axis_Service_Archiver.jar">
          <export name="*"/>
       </library>
+      <library name="lib/axis2-@axis2_version@.jar">
+         <export name="*"/>
+      </library>
+      <library name="lib/commons-logging-@commons.logging.version@.jar">
+         <export name="*"/>
+      </library>
+      <library name="lib/log4j-@log4j.version@.jar">
+         <export name="*"/>
+      </library>
+      <library name="lib/ant-@ant.version@.jar">
+         <export name="*"/>
+      </library>
    </runtime>
 
    <requires>
       <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.ui.ide"/>
       <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.core.resources"/>
       <import plugin="org.apache.ant"/>
       <import plugin="org.eclipse.jface.text"/>
-      <import plugin="org.eclipse.ui.ide"/>
-      <import plugin="Axis2_Codegen_Wizard"/>
    </requires>
 
 <extension
@@ -36,4 +48,7 @@
             id="org.apache.axis2.tool.service.serviceWizard">
       </wizard>
    </extension>
+   <extension point="org.eclipse.help.toc">
+    <toc file="help_toc.xml" primary="true" />
+</extension>
 </plugin>

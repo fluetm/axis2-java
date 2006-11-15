@@ -16,8 +16,8 @@
 
 package org.apache.axis2.mtom;
 
-import org.apache.axis2.om.OMElement;
-import org.apache.axis2.om.OMText;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMText;
 
 import java.util.Iterator;
 
@@ -25,16 +25,16 @@ import java.util.Iterator;
 public class EchoService {
     public OMElement mtomSample(OMElement element) throws Exception {
         if (element.getLocalName().equalsIgnoreCase("Data")
-                && element.getNamespace().getName().equalsIgnoreCase(
+                && element.getNamespace().getNamespaceURI().equalsIgnoreCase(
                         "http://example.org/mtom/data")) {
-                OMText binaryNode = (OMText)element.getFirstChild();
+                OMText binaryNode = (OMText)element.getFirstOMChild();
                 binaryNode.setOptimize(!binaryNode.isOptimized());
             }
-         else if (element.getLocalName().equalsIgnoreCase("EchoTest") && element.getNamespace().getName().equalsIgnoreCase("http://example.org/mtom/data")) {
+         else if (element.getLocalName().equalsIgnoreCase("EchoTest") && element.getNamespace().getNamespaceURI().equalsIgnoreCase("http://example.org/mtom/data")) {
             Iterator childrenIterator = element.getChildren();
             while (childrenIterator.hasNext()) {
                 OMElement dataElement = (OMElement) childrenIterator.next();
-                OMText binaryNode = (OMText)dataElement.getFirstChild();
+                OMText binaryNode = (OMText)dataElement.getFirstOMChild();
                 binaryNode.setOptimize(!binaryNode.isOptimized());
             }
         }

@@ -1,66 +1,46 @@
+/*
+ * Copyright 2004,2005 The Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.axis2.engine;
 
 import junit.framework.TestCase;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.context.ConfigurationContext;
-import org.apache.axis2.soap.SOAPEnvelope;
-import org.apache.axis2.soap.SOAPFactory;
-import org.apache.axis2.soap.SOAP11Constants;
-import org.apache.axis2.transport.local.LocalTransportReceiver;
-import org.apache.axis2.description.ServiceDescription;
-import org.apache.axis2.description.ParameterImpl;
-import org.apache.axis2.description.OperationDescription;
-import org.apache.axis2.receivers.AbstractMessageReceiver;
-import org.apache.axis2.receivers.RawXMLINOnlyMessageReceiver;
-import org.apache.axis2.util.Utils;
-import org.apache.axis2.om.OMElement;
-import org.apache.axis2.om.OMFactory;
-import org.apache.axis2.om.OMAbstractFactory;
-import org.apache.axis2.om.OMNamespace;
-import org.apache.axis2.clientapi.MessageSender;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.soap.SOAP11Constants;
+import org.apache.axis2.AxisFault;
 import org.apache.axis2.Constants;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.axis2.addressing.EndpointReference;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.context.ConfigurationContextFactory;
+import org.apache.axis2.description.*;
+import org.apache.axis2.engine.util.TestConstants;
+import org.apache.axis2.receivers.RawXMLINOnlyMessageReceiver;
+import org.apache.axis2.receivers.RawXMLINOutMessageReceiver;
+import org.apache.axis2.transport.TransportListener;
+import org.apache.axis2.transport.local.LocalTransportReceiver;
+import org.apache.axis2.transport.local.LocalTransportSender;
 
 import javax.xml.namespace.QName;
-/*
-* Copyright 2004,2005 The Apache Software Foundation.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-*
-*/
 
-/**
- * Author: Deepal Jayasinghe
- * Date: Aug 23, 2005
- * Time: 7:06:37 PM
- */
-public class MessageContextInjectionTest extends TestCase {
-    private EndpointReference targetEPR =
-            new EndpointReference("/axis/services/EchoXMLService/echoOMElement");
-    private Log log = LogFactory.getLog(getClass());
-    private QName serviceName = new QName("EchoXMLService");
-    private QName operationName = new QName("echoOMElement");
-
-
-    private AxisConfiguration engineRegistry;
-    private MessageContext mc;
-
-    private SOAPEnvelope envelope;
-
-    private boolean finish = false;
+public class MessageContextInjectionTest extends TestCase implements TestConstants {
+    private TransportOutDescription tOut;
 
     public MessageContextInjectionTest() {
         super(MessageContextInjectionTest.class.getName());
@@ -71,23 +51,85 @@ public class MessageContextInjectionTest extends TestCase {
     }
 
     protected void setUp() throws Exception {
-        LocalTransportReceiver.CONFIG_CONTEXT = new ConfigurationContext(
-                new AxisConfigurationImpl());
+        AxisConfiguration config = new AxisConfiguration();
 
-        ServiceDescription service = new ServiceDescription(serviceName);
+        config.addMessageReceiver(
+                "http://www.w3.org/2004/08/wsdl/in-only", new RawXMLINOnlyMessageReceiver());
+        config.addMessageReceiver(
+                "http://www.w3.org/2004/08/wsdl/in-out", new RawXMLINOutMessageReceiver());
+
+        DispatchPhase dispatchPhase = new DispatchPhase();
+
+        dispatchPhase.setName("Dispatch");
+
+        AddressingBasedDispatcher abd = new AddressingBasedDispatcher();
+
+        abd.initDispatcher();
+
+        RequestURIBasedDispatcher rud = new RequestURIBasedDispatcher();
+
+        rud.initDispatcher();
+
+        SOAPActionBasedDispatcher sabd = new SOAPActionBasedDispatcher();
+
+        sabd.initDispatcher();
+
+        SOAPMessageBodyBasedDispatcher smbd = new SOAPMessageBodyBasedDispatcher();
+
+        smbd.initDispatcher();
+
+        InstanceDispatcher id = new InstanceDispatcher();
+
+        id.init(new HandlerDescription("InstanceDispatcher"));
+        dispatchPhase.addHandler(abd);
+        dispatchPhase.addHandler(rud);
+        dispatchPhase.addHandler(sabd);
+        dispatchPhase.addHandler(smbd);
+        dispatchPhase.addHandler(id);
+        config.getGlobalInFlow().add(dispatchPhase);
+        TransportInDescription tIn = new TransportInDescription(new QName(Constants.TRANSPORT_LOCAL));
+        tIn.setReceiver(new TransportListener() {
+
+            public void init(ConfigurationContext axisConf, TransportInDescription transprtIn) {
+                //To change body of implemented methods use File | Settings | File Templates.
+            }
+
+            public void start() {
+                //To change body of implemented methods use File | Settings | File Templates.
+            }
+
+            public void stop() {
+                //To change body of implemented methods use File | Settings | File Templates.
+            }
+
+            public EndpointReference getEPRForService(String serviceName, String ip) throws AxisFault {
+                return null;  //To change body of implemented methods use File | Settings | File Templates.
+            }
+
+            public EndpointReference[] getEPRsForService(String serviceName, String ip){
+                return null;
+            }
+        });
+        config.addTransportIn(tIn);
+
+        tOut = new TransportOutDescription(new QName(Constants.TRANSPORT_LOCAL));
+        tOut.setSender(new LocalTransportSender());
+        config.addTransportOut(tOut);
+
+        LocalTransportReceiver.CONFIG_CONTEXT = new ConfigurationContext(
+                config);
+
+        AxisService service = new AxisService(serviceName.getLocalPart());
         service.addParameter(
-                new ParameterImpl(AbstractMessageReceiver.SERVICE_CLASS,
+                new Parameter(Constants.SERVICE_CLASS,
                         MessageContextEnabledEcho.class.getName()));
-        OperationDescription operation = new OperationDescription(
+        AxisOperation axisOperation = new InOnlyAxisOperation(
                 operationName);
-        operation.setMessageReceiver(new RawXMLINOnlyMessageReceiver());
-        service.addOperation(operation);
+        axisOperation.setMessageReceiver(new RawXMLINOnlyMessageReceiver());
+        service.addOperation(axisOperation);
         service.setClassLoader(Thread.currentThread().getContextClassLoader());
         LocalTransportReceiver.CONFIG_CONTEXT.getAxisConfiguration()
                 .addService(service);
-        Utils.resolvePhases(
-                LocalTransportReceiver.CONFIG_CONTEXT.getAxisConfiguration(),
-                service);
     }
 
     protected void tearDown() throws Exception {
@@ -99,23 +141,24 @@ public class MessageContextInjectionTest extends TestCase {
         OMElement method = fac.createOMElement("echoOMElement", omNs);
         OMElement value = fac.createOMElement("myValue", omNs);
         value.addChild(
-                fac.createText(value, "Isaac Assimov, the foundation Sega"));
+                fac.createOMText(value, "Isaac Asimov, The Foundation Trilogy"));
         method.addChild(value);
 
         return method;
     }
 
     public void testEchoXMLSync() throws Exception {
-        SOAPFactory fac = OMAbstractFactory.getSOAP11Factory();
-
         OMElement payload = createEnvelope();
 
-        MessageSender sender = new MessageSender("target/test-resources/intregrationRepo");
-
-        sender.setTo(targetEPR);
-        sender.setSenderTransport(Constants.TRANSPORT_LOCAL);
-        sender.setSoapVersionURI(SOAP11Constants.SOAP_ENVELOPE_NAMESPACE_URI);
-        sender.send(operationName.getLocalPart(), payload);
+        ConfigurationContext configContext =
+                ConfigurationContextFactory.createConfigurationContextFromFileSystem("target/test-resources/integrationRepo", null);
+        ServiceClient sender = new ServiceClient(configContext, null);
+        Options options = new Options();
+        sender.setOptions(options);
+        options.setTo(targetEPR);
+        options.setTransportOut(tOut);
+        options.setSoapVersionURI(SOAP11Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+        sender.fireAndForget(payload);
 
     }
 

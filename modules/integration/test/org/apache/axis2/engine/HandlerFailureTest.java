@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,43 +19,38 @@ package org.apache.axis2.engine;
 //todo
 
 import junit.framework.TestCase;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.om.util.StAXUtils;
+import org.apache.axiom.soap.SOAPFactory;
 import org.apache.axis2.AxisFault;
 import org.apache.axis2.Constants;
 import org.apache.axis2.addressing.EndpointReference;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.context.ConfigurationContextFactory;
 import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.description.Flow;
-import org.apache.axis2.description.FlowImpl;
-import org.apache.axis2.description.ServiceDescription;
+import org.apache.axis2.description.AxisOperation;
+import org.apache.axis2.description.AxisService;
+import org.apache.axis2.engine.util.TestConstants;
 import org.apache.axis2.handlers.AbstractHandler;
 import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.om.OMAbstractFactory;
-import org.apache.axis2.om.OMElement;
-import org.apache.axis2.om.OMNamespace;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
 import org.apache.axis2.phaseresolver.PhaseMetadata;
-import org.apache.axis2.soap.SOAPFactory;
 import org.apache.axis2.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLOutputFactory;
+import java.util.ArrayList;
 
 
-public class HandlerFailureTest extends TestCase {
-    private Log log = LogFactory.getLog(getClass());
-    private static final String SERVICE_NAME = "EchoXMLService";
-    private static final String OPERATION_NAME = "echoOMElement";
-
-
-    private static final String ADDRESS = "http://127.0.0.1:" +
-            (UtilServer.TESTING_PORT) +
-            "/axis/services/" + SERVICE_NAME + "/" + OPERATION_NAME;
-    private EndpointReference targetEPR = new EndpointReference(ADDRESS);
-    private QName serviceName = new QName("", SERVICE_NAME);
-
-    private QName operationName = new QName(OPERATION_NAME);
-
-
+public class HandlerFailureTest extends UtilServerBasedTestCase implements TestConstants {
+	private static final Log log = LogFactory.getLog(HandlerFailureTest.class);
 
     public HandlerFailureTest() {
         super(HandlerFailureTest.class.getName());
@@ -65,86 +60,35 @@ public class HandlerFailureTest extends TestCase {
         super(testName);
     }
 
-    protected void setUp() throws Exception {
+    public static Test suite() {
+        return getTestSetup(new TestSuite(HandlerFailureTest.class));
     }
 
 
     public void testFailureAtServerRequestFlow() throws Exception {
-        Flow flow = new FlowImpl();
-        Utils.addHandler(flow,
-                new SpeakingHandler(),
-                PhaseMetadata.PHASE_POLICY_DETERMINATION);
-        Utils.addHandler(flow,
-                new SpeakingHandler(),
-                PhaseMetadata.PHASE_POLICY_DETERMINATION);
-        Utils.addHandler(flow,
-                new SpeakingHandler(),
-                PhaseMetadata.PHASE_POLICY_DETERMINATION);
-        Utils.addHandler(flow,
-                new SpeakingHandler(),
-                PhaseMetadata.PHASE_POLICY_DETERMINATION);
-        Utils.addHandler(flow,
-                culprit,
-                PhaseMetadata.PHASE_POLICY_DETERMINATION);
-        Utils.addHandler(flow,
-                new SpeakingHandler(),
-                PhaseMetadata.PHASE_POLICY_DETERMINATION);
 
-        ServiceDescription service = Utils.createSimpleService(serviceName,
+        AxisService service = Utils.createSimpleService(serviceName,
                 Echo.class.getName(),
                 operationName);
-        service.setInFlow(flow);
 
-        UtilServer.start();
         UtilServer.deployService(service);
+        AxisOperation operation = service.getOperation(operationName);
+        ArrayList phasec = new ArrayList();
+        phasec.add(new Phase(PhaseMetadata.PHASE_POLICY_DETERMINATION));
+        operation.setRemainingPhasesInFlow(phasec);
+        ArrayList phase = operation.getRemainingPhasesInFlow();
+        for (int i = 0; i < phase.size(); i++) {
+            Phase phase1 = (Phase) phase.get(i);
+            if (PhaseMetadata.PHASE_POLICY_DETERMINATION.equals(phase1.getPhaseName())) {
+                phase1.addHandler(culprit);
+            }
+        }
         try {
             callTheService();
         } finally {
             UtilServer.unDeployService(serviceName);
-            UtilServer.stop();
         }
     }
-
-//    public void testFailureAtServerResponseFlow() throws Exception {
-//        ServiceDescription service = Utils.createSimpleService(serviceName,org.apache.axis2.engine.Echo.class.getName(),operationName);
-// 
-//
-//        Flow flow = new FlowImpl();
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        service.setInFlow(flow);
-//
-//
-//        flow = new FlowImpl();
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, culprit,PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        Utils.addHandler(flow, new SpeakingHandler(),PhaseMetadata.PHASE_POLICY_DETERMINATION);
-//        service.setInFlow(flow);
-//
-//        OperationDescription operation = new OperationDescription(operationName);
-//        service.addOperation(operation);
-//
-//        UtilServer.start();
-//        UtilServer.deployService(service);
-//        try {
-//            callTheService();
-//        } finally {
-//            UtilServer.unDeployService(serviceName);
-//            UtilServer.stop();
-//        }
-//    }
-
-
-    protected void tearDown() throws Exception {
-
-    }
-
 
     private void callTheService() throws Exception {
         try {
@@ -154,33 +98,32 @@ public class HandlerFailureTest extends TestCase {
                     "my");
             OMElement method = fac.createOMElement("echoOMElement", omNs);
             OMElement value = fac.createOMElement("myValue", omNs);
-            value.setText("Isaac Assimov, the foundation Sega");
+            value.setText("Isaac Asimov, The Foundation Trilogy");
             method.addChild(value);
+            Options options = new Options();
+            options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+            options.setTo(targetEPR);
+            ConfigurationContext configContext =
+                    ConfigurationContextFactory.createConfigurationContextFromFileSystem(null,null);
+            ServiceClient sender = new ServiceClient(configContext, null);
+            sender.setOptions(options);
 
-            org.apache.axis2.clientapi.Call call =
-                    new      org.apache.axis2.clientapi.Call("target/test-resources/intregrationRepo");
-            //EndpointReference targetEPR = new EndpointReference(AddressingConstants.WSA_TO, "http://127.0.0.1:" + Utils.TESTING_PORT + "/axis/services/EchoXMLService");
-            
-            call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                    Constants.TRANSPORT_HTTP,
-                    false);
-            call.setTo(targetEPR);
-            OMElement result = call.invokeBlocking(
-                    operationName.getLocalPart(), method);
-            result.serialize(XMLOutputFactory.newInstance().createXMLStreamWriter(
-                            System.out));
-            fail("the test must fail due to bad service Name");
+            OMElement result = sender.sendReceive(method);
+
+
+            result.serializeAndConsume(StAXUtils.createXMLStreamWriter(
+                    System.out));
+            fail("the test must fail due to the intentional failure of the \"culprit\" handler");
         } catch (AxisFault e) {
             log.info(e.getMessage());
             String message = e.getMessage();
             assertTrue((message.indexOf(UtilServer.FAILURE_MESSAGE)) >= 0);
-            return;
         }
 
     }
 
     private Handler culprit = new AbstractHandler() {
-        public void invoke(MessageContext msgContext) throws AxisFault {
+        public InvocationResponse invoke(MessageContext msgContext) throws AxisFault {
             throw new AxisFault(UtilServer.FAILURE_MESSAGE);
         }
     };
