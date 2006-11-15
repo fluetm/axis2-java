@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,43 +16,40 @@
 
 package org.apache.axis2.mtom;
 
-/**
- * @author <a href="mailto:thilina@opensource.lk">Thilina Gunarathne </a>
- */
-
 import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import junit.framework.Test;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.om.OMText;
+import org.apache.axiom.om.impl.llom.OMTextImpl;
+import org.apache.axiom.soap.SOAP12Constants;
 import org.apache.axis2.Constants;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.context.ServiceContext;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
 import org.apache.axis2.context.ConfigurationContext;
-import org.apache.axis2.description.ServiceDescription;
+import org.apache.axis2.context.ConfigurationContextFactory;
+import org.apache.axis2.context.ServiceContext;
+import org.apache.axis2.description.AxisService;
 import org.apache.axis2.engine.Echo;
+import org.apache.axis2.engine.util.TestConstants;
 import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.om.*;
-import org.apache.axis2.om.impl.llom.OMTextImpl;
-import org.apache.axis2.soap.SOAP12Constants;
-import org.apache.axis2.soap.SOAPFactory;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
 import org.apache.axis2.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import javax.activation.DataHandler;
-import javax.xml.namespace.QName;
 
-public class EchoRawMTOMLoadTest extends TestCase {
-    private EndpointReference targetEPR = new EndpointReference("http://127.0.0.1:"
-            + (UtilServer.TESTING_PORT)
-            + "/axis/services/EchoXMLService/echoOMElement");
+public class EchoRawMTOMLoadTest extends UtilServerBasedTestCase implements TestConstants {
 
-    private Log log = LogFactory.getLog(getClass());
-
-    private QName serviceName = new QName("EchoXMLService");
-
-    private QName operationName = new QName("echoOMElement");
+	private static final Log log = LogFactory.getLog(EchoRawMTOMLoadTest.class);
 
     private ServiceContext serviceContext;
 
-    private ServiceDescription service;
+    private AxisService service;
 
     private OMText textData;
 
@@ -67,8 +64,11 @@ public class EchoRawMTOMLoadTest extends TestCase {
         super(testName);
     }
 
+    public static Test suite() {
+        return getTestSetup2(new TestSuite(EchoRawMTOMLoadTest.class),Constants.TESTING_PATH + "MTOM-enabledRepository");
+    }
+
     protected void setUp() throws Exception {
-        UtilServer.start(Constants.TESTING_PATH + "MTOM-enabledRepository");
         service = Utils.createSimpleService(serviceName, Echo.class.getName(),
                 operationName);
         UtilServer.deployService(service);
@@ -76,8 +76,9 @@ public class EchoRawMTOMLoadTest extends TestCase {
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
+        UtilServer.unDeployClientService();
     }
+
 
     protected OMElement createEnvelope() {
 
@@ -89,9 +90,9 @@ public class EchoRawMTOMLoadTest extends TestCase {
                 98};
         for (int i = 0; i < 4; i++) {
             OMElement subData = fac.createOMElement("subData", omNs);
-            DataHandler dataHandler = new DataHandler("Thilina","text/plain");
+            DataHandler dataHandler = new DataHandler("Thilina", "text/plain");
             //new ByteArrayDataSource(expectedByteArray));
-            textData = new OMTextImpl(dataHandler, true);
+            textData = new OMTextImpl(dataHandler, true, fac);
             subData.addChild(textData);
             data.addChild(subData);
 
@@ -103,32 +104,33 @@ public class EchoRawMTOMLoadTest extends TestCase {
 
     public void testEchoXMLSync() throws Exception {
         for (int i = 0; i < 10; i++) {
-            SOAPFactory fac = OMAbstractFactory.getSOAP11Factory();
-
             OMElement payload = createEnvelope();
-
-            org.apache.axis2.clientapi.Call call =
-                    new org.apache.axis2.clientapi.Call("target/test-resources/intregrationRepo");
-            call.setTo(targetEPR);
-            call.set(Constants.Configuration.ENABLE_MTOM,
+            Options options = new Options();
+            options.setTo(targetEPR);
+            options.setProperty(Constants.Configuration.ENABLE_MTOM,
                     Constants.VALUE_TRUE);
-            call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                    Constants.TRANSPORT_HTTP, false);
-            call.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+            options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+            options.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+            ConfigurationContext configContext =
+                    ConfigurationContextFactory.createConfigurationContextFromFileSystem("target/test-resources/integrationRepo",null);
+            ServiceClient sender = new ServiceClient(configContext, null);
+            sender.setOptions(options);
+            OMElement result = sender.sendReceive(payload);
 
-            OMElement result = call.invokeBlocking(operationName
-                    .getLocalPart(),
-                    payload);
-            OMElement ele = (OMElement) result.getFirstChild();
-            OMElement ele1 = (OMElement) ele.getFirstChild();
-            OMText binaryNode = (OMText) ele1.getFirstChild();
+            OMElement ele = (OMElement) result.getFirstOMChild();
+            OMElement ele1 = (OMElement) ele.getFirstOMChild();
+            OMText binaryNode = (OMText) ele1.getFirstOMChild();
+            compareWithActualOMText(binaryNode);
+            OMElement ele2 = (OMElement) ele1.getNextOMSibling();
+            binaryNode = (OMText) ele2.getFirstOMChild();
             compareWithActualOMText(binaryNode);
             log.info("" + i);
+            UtilServer.unDeployClientService();
         }
     }
-    protected void compareWithActualOMText(OMText binaryNode)
-    {
-        assertEquals(textData.getText(),binaryNode.getText());
+
+    protected void compareWithActualOMText(OMText binaryNode) {
+        assertEquals(textData.getText(), binaryNode.getText());
     }
 
 }

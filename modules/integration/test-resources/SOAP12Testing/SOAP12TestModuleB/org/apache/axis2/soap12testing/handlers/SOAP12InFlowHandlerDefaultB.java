@@ -1,5 +1,3 @@
-package org.apache.axis2.soap12testing.handlers;
-
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
  *
@@ -14,26 +12,30 @@ package org.apache.axis2.soap12testing.handlers;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * 
  */
 
-/**
- * Author : Deepal Jayasinghe
- * Date: Jul 26, 2005
- * Time: 2:58:10 PM
- */
+package org.apache.axis2.soap12testing.handlers;
 
-import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.soap.*;
-import org.apache.axis2.soap.impl.llom.SOAPProcessingException;
-import org.apache.axis2.soap.SOAP12Constants;
-import org.apache.axis2.om.OMAttribute;
-import org.apache.axis2.om.OMAbstractFactory;
-import org.apache.axis2.om.OMNamespace;
-import org.apache.axis2.handlers.AbstractHandler;
 import org.apache.axis2.AxisFault;
-
+import org.apache.axis2.context.MessageContext;
+import org.apache.axis2.handlers.AbstractHandler;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMAttribute;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.soap.SOAP12Constants;
+import org.apache.axiom.soap.SOAPBody;
+import org.apache.axiom.soap.SOAPEnvelope;
+import org.apache.axiom.soap.SOAPFactory;
+import org.apache.axiom.soap.SOAPFault;
+import org.apache.axiom.soap.SOAPFaultCode;
+import org.apache.axiom.soap.SOAPFaultNode;
+import org.apache.axiom.soap.SOAPFaultReason;
+import org.apache.axiom.soap.SOAPFaultRole;
+import org.apache.axiom.soap.SOAPFaultText;
+import org.apache.axiom.soap.SOAPFaultValue;
+import org.apache.axiom.soap.SOAPHeader;
+import org.apache.axiom.soap.SOAPHeaderBlock;
+import org.apache.axiom.soap.SOAPProcessingException;
 
 import java.util.Iterator;
 
@@ -49,7 +51,7 @@ public class SOAP12InFlowHandlerDefaultB extends AbstractHandler implements Head
 
     }
 
-    public void invoke(MessageContext msgContext) throws AxisFault {
+    public InvocationResponse invoke(MessageContext msgContext) throws AxisFault {
         SOAPEnvelope envelope = msgContext.getEnvelope();
         SOAPFactory factory = OMAbstractFactory.getSOAP12Factory();
         SOAPHeader headerAdd = factory.createSOAPHeader(envelope);
@@ -61,7 +63,7 @@ public class SOAP12InFlowHandlerDefaultB extends AbstractHandler implements Head
                 } catch (ClassCastException e) {
                     continue;
                 }
-                Iterator attributes = headerBlock.getAttributes();
+                Iterator attributes = headerBlock.getAllAttributes();
 
                 if (attributes.hasNext()) {
                     OMAttribute firstAttribute = (OMAttribute) attributes.next();
@@ -79,11 +81,11 @@ public class SOAP12InFlowHandlerDefaultB extends AbstractHandler implements Head
                             roleValue.equals(SOAP12_ROLE + "/" + NEXT_ROLE)) {
                         headerBlock.setLocalName(RESPONSE_HEADERBLOCK_NAME);
                         if (attributePresent)
-                            headerBlock.removeAttribute((OMAttribute) headerBlock.getAttributes().next());
+                            headerBlock.removeAttribute((OMAttribute) headerBlock.getAllAttributes().next());
                         headerBlockPresent = new Integer(1);
-                        msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent, true);
+                        msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent);
                         headerAdd.addChild(headerBlock);
-                        msgContext.getOperationContext().setProperty("HEADER_BLOCK", headerAdd, true);
+                        msgContext.getOperationContext().setProperty("HEADER_BLOCK", headerAdd);
 
                     }
                 } else {
@@ -105,7 +107,7 @@ public class SOAP12InFlowHandlerDefaultB extends AbstractHandler implements Head
                                     SOAPFaultText text = factory.createSOAPFaultText(reason);
                                     text.setLang("en-US");
                                     text.setText("Header not understood");
-                                    reason.setSOAPText(text);
+                                    reason.addSOAPText(text);
                                     //fault.setReason(reason);
                                     if (roleValue != null && roleValue.equals(SAMPLE_ROLE + "/" + ROLE_BY_B)) {
                                         SOAPFaultNode node = factory.createSOAPFaultNode(fault);
@@ -133,9 +135,9 @@ public class SOAP12InFlowHandlerDefaultB extends AbstractHandler implements Head
                                     //e.printStackTrace();
                                 }
                                 headerBlockPresent = new Integer(1);
-                                msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent, true);
+                                msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent);
                                 headerAdd.addChild(newHeaderBlock);
-                                msgContext.getOperationContext().setProperty("HEADER_BLOCK", headerAdd, true);
+                                msgContext.getOperationContext().setProperty("HEADER_BLOCK", headerAdd);
 
                                 throw new AxisFault("Intentional Failure from SOAP 1.2 testing ...");
                             }
@@ -147,13 +149,14 @@ public class SOAP12InFlowHandlerDefaultB extends AbstractHandler implements Head
                 }
             }
             if (headerBlockPresent.equals(new Integer(0))) {
-                msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent, true);
+                msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent);
             }
             headerBlockPresent = new Integer(0);
         } else {
             headerBlockPresent = new Integer(0);
-            msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent, true);
+            msgContext.getOperationContext().setProperty("HEADER_BLOCK_PRESENT", headerBlockPresent);
         }
+        return InvocationResponse.CONTINUE;
     }
 }
 

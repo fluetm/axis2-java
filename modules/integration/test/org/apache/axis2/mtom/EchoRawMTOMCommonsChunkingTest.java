@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,49 +16,38 @@
 
 package org.apache.axis2.mtom;
 
-/**
- * @author <a href="mailto:thilina@opensource.lk">Thilina Gunarathne </a>
- */
-import junit.framework.TestCase;
-import org.apache.axis2.Constants;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.attachments.utils.ImageDataSource;
-import org.apache.axis2.attachments.utils.ImageIO;
-import org.apache.axis2.context.ServiceContext;
-import org.apache.axis2.context.ConfigurationContext;
-import org.apache.axis2.description.ServiceDescription;
-import org.apache.axis2.engine.Echo;
-import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.om.*;
-import org.apache.axis2.om.impl.llom.OMTextImpl;
-import org.apache.axis2.soap.SOAP12Constants;
-import org.apache.axis2.util.Utils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.net.URL;
 
 import javax.activation.DataHandler;
-import javax.xml.namespace.QName;
-import java.awt.*;
-import java.io.InputStream;
+import javax.activation.FileDataSource;
 
-public class EchoRawMTOMCommonsChunkingTest extends TestCase {
-    private EndpointReference targetEPR = new EndpointReference("http://127.0.0.1:"
-            + (UtilServer.TESTING_PORT)
-            + "/axis/services/EchoXMLService/echoOMElement");
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
-    private Log log = LogFactory.getLog(getClass());
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
+import org.apache.axiom.om.OMText;
+import org.apache.axiom.om.impl.llom.OMTextImpl;
+import org.apache.axiom.soap.SOAP12Constants;
+import org.apache.axis2.Constants;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.context.ConfigurationContextFactory;
+import org.apache.axis2.description.AxisService;
+import org.apache.axis2.engine.Echo;
+import org.apache.axis2.engine.util.TestConstants;
+import org.apache.axis2.integration.UtilServer;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
+import org.apache.axis2.util.Utils;
 
-    private QName serviceName = new QName("EchoXMLService");
-
-    private QName operationName = new QName("echoOMElement");
-
-    private ServiceContext serviceContext;
-
-    private ServiceDescription service;
+public class EchoRawMTOMCommonsChunkingTest extends UtilServerBasedTestCase implements TestConstants {
 
     private OMElement data;
-
-    private boolean finish = false;
+    private String fileName = "test-resources/mtom/test.jpg";
 
     public EchoRawMTOMCommonsChunkingTest() {
         super(EchoRawMTOMCommonsChunkingTest.class.getName());
@@ -68,16 +57,18 @@ public class EchoRawMTOMCommonsChunkingTest extends TestCase {
         super(testName);
     }
 
+    public static Test suite() {
+        return getTestSetup2(new TestSuite(EchoRawMTOMCommonsChunkingTest.class),Constants.TESTING_PATH + "MTOM-enabledRepository");
+    }
+
     protected void setUp() throws Exception {
-        UtilServer.start(Constants.TESTING_PATH + "MTOM-enabledRepository");
-        service = Utils.createSimpleService(serviceName, Echo.class.getName(),
+        AxisService service = Utils.createSimpleService(serviceName, Echo.class.getName(),
                 operationName);
         UtilServer.deployService(service);
     }
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
     }
 
     private OMElement createEnvelope() throws Exception {
@@ -87,15 +78,10 @@ public class EchoRawMTOMCommonsChunkingTest extends TestCase {
         OMNamespace omNs = fac.createOMNamespace("http://localhost/my", "my");
         OMElement rpcWrapEle = fac.createOMElement("echoOMElement", omNs);
         data = fac.createOMElement("data", omNs);
-        Image expectedImage;
-        expectedImage = new ImageIO()
-                .loadImage(getResourceAsStream("org/apache/axis2/mtom/test.jpg"));
-
-        ImageDataSource dataSource = new ImageDataSource("test.jpg",
-                expectedImage);
+        FileDataSource dataSource = new FileDataSource(fileName);
         expectedDH = new DataHandler(dataSource);
         OMElement subData = fac.createOMElement("subData", omNs);
-        OMText textData = new OMTextImpl(expectedDH);
+        OMText textData = new OMTextImpl(expectedDH, fac);
         subData.addChild(textData);
         data.addChild(subData);
         rpcWrapEle.addChild(data);
@@ -107,24 +93,28 @@ public class EchoRawMTOMCommonsChunkingTest extends TestCase {
 
         OMElement payload = createEnvelope();
 
-        org.apache.axis2.clientapi.Call call = new org.apache.axis2.clientapi.Call(
-                Constants.TESTING_PATH + "commons-http-enabledRepository");
-        call.setTo(targetEPR);
-        call.set(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
-        call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                Constants.TRANSPORT_HTTP, false);
-        call.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
-        OMElement result = call.invokeBlocking(operationName
-                .getLocalPart(), payload);
+        Options options = new Options();
+        options.setTo(targetEPR);
+        options.setProperty(Constants.Configuration.ENABLE_MTOM, Constants.VALUE_TRUE);
+        options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
 
-        OMElement ele = (OMElement) result.getFirstChild();
+        options.setSoapVersionURI(SOAP12Constants.SOAP_ENVELOPE_NAMESPACE_URI);
+
+        ConfigurationContext configContext =
+                ConfigurationContextFactory.createConfigurationContextFromFileSystem(
+                        Constants.TESTING_PATH + "commons-http-enabledRepository", null);
+        ServiceClient sender = new ServiceClient(configContext, null);
+        sender.setOptions(options);
+        options.setTo(targetEPR);
+
+        sender.sendReceive(payload);
         this.campareWithCreatedOMElement(data);
 
     }
 
-    private InputStream getResourceAsStream(String path) {
+    private URL getResourceAsStream(String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        return cl.getResourceAsStream(path);
+        return cl.getResource(path);
     }
 
     private void campareWithCreatedOMElement(OMElement element) {

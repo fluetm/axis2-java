@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,44 +16,24 @@
 
 package org.apache.axis2.engine;
 
-import junit.framework.TestCase;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
 import org.apache.axis2.Constants;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.axis2.context.MessageContext;
-import org.apache.axis2.context.ServiceContext;
-import org.apache.axis2.description.ServiceDescription;
+import org.apache.axis2.client.Options;
+import org.apache.axis2.client.ServiceClient;
+import org.apache.axis2.context.ConfigurationContext;
+import org.apache.axis2.description.AxisService;
+import org.apache.axis2.engine.util.TestConstants;
 import org.apache.axis2.integration.TestingUtils;
 import org.apache.axis2.integration.UtilServer;
-import org.apache.axis2.om.OMAbstractFactory;
-import org.apache.axis2.om.OMElement;
-import org.apache.axis2.om.OMFactory;
-import org.apache.axis2.om.OMNamespace;
-import org.apache.axis2.transport.http.SimpleHTTPServer;
+import org.apache.axis2.integration.UtilServerBasedTestCase;
 import org.apache.axis2.util.Utils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
-import javax.xml.namespace.QName;
-
-public class EchoRawXMLOnTwoChannelsSyncTest extends TestCase {
-    private EndpointReference targetEPR =
-            new EndpointReference("http://127.0.0.1:"
-                    + (UtilServer.TESTING_PORT)
-                    + "/axis2/services/EchoXMLService");
-    private Log log = LogFactory.getLog(getClass());
-    private QName serviceName = new QName("EchoXMLService");
-    private QName operationName = new QName("echoOMElement");
-    private QName transportName = new QName("http://localhost/my",
-            "NullTransport");
-
-    private AxisConfiguration engineRegistry;
-    private MessageContext mc;
-    private Thread thisThread;
-    private SimpleHTTPServer sas;
-    private ServiceContext serviceContext;
-
-    private boolean finish = false;
-
+public class EchoRawXMLOnTwoChannelsSyncTest extends UtilServerBasedTestCase implements TestConstants {
 
     public EchoRawXMLOnTwoChannelsSyncTest() {
         super(EchoRawXMLOnTwoChannelsSyncTest.class.getName());
@@ -63,12 +43,12 @@ public class EchoRawXMLOnTwoChannelsSyncTest extends TestCase {
         super(testName);
     }
 
-    protected void setUp() throws Exception {
-        UtilServer.start();
-        UtilServer.getConfigurationContext().getAxisConfiguration()
-                .engageModule(new QName("addressing"));
+    public static Test suite() {
+        return getTestSetup(new TestSuite(EchoRawXMLOnTwoChannelsSyncTest.class));
+    }
 
-        ServiceDescription service =
+    protected void setUp() throws Exception {
+        AxisService service =
                 Utils.createSimpleService(serviceName,
                         Echo.class.getName(),
                         operationName);
@@ -78,42 +58,70 @@ public class EchoRawXMLOnTwoChannelsSyncTest extends TestCase {
 
     protected void tearDown() throws Exception {
         UtilServer.unDeployService(serviceName);
-        UtilServer.stop();
     }
 
 
     public void testEchoXMLCompleteSync() throws Exception {
-        ServiceDescription service =
-                Utils.createSimpleService(serviceName,
+        AxisService service =
+                Utils.createSimpleServiceforClient(serviceName,
                         Echo.class.getName(),
                         operationName);
 
-        ServiceContext serviceContext = UtilServer.createAdressedEnabledClientSide(
-                service);
+        ConfigurationContext configConetxt = UtilServer.createClientConfigurationContext();
 
         OMFactory fac = OMAbstractFactory.getOMFactory();
 
         OMNamespace omNs = fac.createOMNamespace("http://localhost/my", "my");
         OMElement method = fac.createOMElement("echoOMElement", omNs);
         OMElement value = fac.createOMElement("myValue", omNs);
-        value.setText("Isaac Assimov, the foundation Sega");
+        value.setText("Isaac Asimov, The Foundation Trilogy");
         method.addChild(value);
+        Options options = new Options();
+        options.setTo(targetEPR);
+        options.setTransportInProtocol(Constants.TRANSPORT_HTTP);
+        options.setUseSeparateListener(true);
+        options.setAction(operationName.getLocalPart());
 
-        org.apache.axis2.clientapi.Call call = new org.apache.axis2.clientapi.Call(
-                serviceContext);
-        call.setTo(targetEPR);
-        call.engageModule(new QName(Constants.MODULE_ADDRESSING));
-        call.setTransportInfo(Constants.TRANSPORT_HTTP,
-                Constants.TRANSPORT_HTTP,
-                true);
-        call.setWsaAction(operationName.getLocalPart());
-//        call.setTimeOutInMilliSeconds(60*10000);
+        ServiceClient sender = new ServiceClient(configConetxt, service);
+        sender.setOptions(options);
 
-        OMElement result = call.invokeBlocking(
-                operationName.getLocalPart(), method);
+        OMElement result = sender.sendReceive(operationName, method);
+
         TestingUtils.campareWithCreatedOMElement(result);
-        call.close();
+        sender.cleanup();
 
     }
+
+    public void testEchoXMLCompleteSyncwithTwoTransport() throws Exception {
+          AxisService service =
+                  Utils.createSimpleServiceforClient(serviceName,
+                          Echo.class.getName(),
+                          operationName);
+
+          ConfigurationContext configConetxt = UtilServer.createClientConfigurationContext();
+
+          OMFactory fac = OMAbstractFactory.getOMFactory();
+
+          OMNamespace omNs = fac.createOMNamespace("http://localhost/my", "my");
+          OMElement method = fac.createOMElement("echoOMElement", omNs);
+          OMElement value = fac.createOMElement("myValue", omNs);
+          value.setText("Isaac Asimov, The Foundation Trilogy");
+          method.addChild(value);
+          Options options = new Options();
+          options.setTo(targetEPR);
+          options.setTransportInProtocol(Constants.TRANSPORT_TCP);
+          options.setUseSeparateListener(true);
+          options.setAction(operationName.getLocalPart());
+
+          ServiceClient sender = new ServiceClient(configConetxt, service);
+          sender.setOptions(options);
+
+          OMElement result = sender.sendReceive(operationName, method);
+
+          TestingUtils.campareWithCreatedOMElement(result);
+          sender.cleanup();
+
+      }
+
 
 }

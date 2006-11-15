@@ -1,12 +1,12 @@
 /*
  * Copyright 2004,2005 The Apache Software Foundation.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,10 @@ import org.apache.axis2.AxisFault;
 import org.apache.axis2.context.ConfigurationContext;
 import org.apache.axis2.context.ConfigurationContextFactory;
 import org.apache.axis2.context.ServiceGroupContext;
-import org.apache.axis2.description.ServiceDescription;
+import org.apache.axis2.description.AxisService;
+import org.apache.axis2.description.AxisServiceGroup;
+import org.apache.axis2.engine.ListenerManager;
 import org.apache.axis2.transport.tcp.TCPServer;
-import org.apache.axis2.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -31,60 +32,56 @@ import java.io.File;
 
 public class UtilsTCPServer {
     private static int count = 0;
+
     private static TCPServer receiver;
 
     public static final int TESTING_PORT = 5555;
-    public static final String FAILURE_MESSAGE = "Intentional Failure";
-    private static Log log = LogFactory.getLog(UtilsTCPServer.class);
 
-    public static synchronized void deployService(ServiceDescription service)
+    public static final String FAILURE_MESSAGE = "Intentional Failure";
+
+	private static final Log log = LogFactory.getLog(UtilsTCPServer.class);
+
+    public static synchronized void deployService(AxisService service)
             throws AxisFault {
 
-        receiver.getSystemContext().getAxisConfiguration().addService(service);
-
-        Utils.resolvePhases(receiver.getSystemContext().getAxisConfiguration(),
-                service);
-        ServiceGroupContext serviceGroupContext = service.getParent().getServiceGroupContext(receiver.getSystemContext());
-
+        receiver.getConfigurationContext().getAxisConfiguration().addService(service);
+        ServiceGroupContext serviceGroupContext = new ServiceGroupContext(
+                receiver.getConfigurationContext(), (AxisServiceGroup) service.getParent());
     }
 
     public static synchronized void unDeployService(QName service)
             throws AxisFault {
-        receiver.getSystemContext().getAxisConfiguration().removeService(service.getLocalPart());
+        receiver.getConfigurationContext().getAxisConfiguration().removeService(
+                service.getLocalPart());
     }
 
     public static synchronized void start() throws Exception {
         if (count == 0) {
 
-            //start tcp server
+            // start tcp server
 
-            ConfigurationContextFactory erfac =
-                    new ConfigurationContextFactory();
             File file = new File(org.apache.axis2.Constants.TESTING_REPOSITORY);
             System.out.println(file.getAbsoluteFile());
             if (!file.exists()) {
                 throw new Exception("Repository directory does not exist");
             }
 
-             ConfigurationContext er  = erfac.buildConfigurationContext(
-                    file.getAbsolutePath());
+            ConfigurationContext er = ConfigurationContextFactory.createConfigurationContextFromFileSystem(file
+                    .getAbsolutePath(), file
+                    .getAbsolutePath() + "/conf/axis2.xml");
             try {
-                Thread.sleep(2000);
+                Thread.sleep(1000);
             } catch (InterruptedException e1) {
                 throw new AxisFault("Thread interuptted", e1);
             }
-            er.getAxisConfiguration().engageModule(
-                    new QName("addressing"));
-            receiver =
-                    new TCPServer(UtilServer.TESTING_PORT,
-                            er);
+            receiver = new TCPServer(UtilServer.TESTING_PORT, er);
             receiver.start();
 
         }
         count++;
     }
 
-    public static synchronized void stop() {
+    public static synchronized void stop() throws AxisFault {
         try {
             if (count == 1) {
                 receiver.stop();
@@ -94,7 +91,12 @@ public class UtilsTCPServer {
                 count--;
             }
         } catch (AxisFault e) {
-           log.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
+        }
+        ListenerManager listenerManager =
+                receiver.getConfigurationContext().getListenerManager();
+        if (listenerManager != null) {
+            listenerManager.stop();
         }
     }
 

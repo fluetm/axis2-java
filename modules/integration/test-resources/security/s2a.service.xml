@@ -2,12 +2,15 @@
 	<parameter locked="false" name="ServiceClass">org.apache.axis2.oasis.ping.PingPortSkeleton</parameter>
 	<!--Mounting the method Ping-->
 	<operation name="Ping">
-		<messageReceiver class="org.apache.axis2.oasis.ping.PingPortMessageReceiver"/>
+		<messageReceiver class="org.apache.axis2.oasis.ping.PingPortMessageReceiverInOut"/>
 	</operation>    
 
-    <parameter name="InAction" locked="false">UsernameTokenSignature UsernameToken Encrypt Timestamp</parameter>
-    <parameter name="InPasswordCallbackClass" locked="false">org.apache.axis2.security.PWCallback</parameter>
-    <parameter name="decryptionPropFile" locked="false">interop.properties</parameter>
+    <parameter name="InflowSecurity">
+      <action>
+        <items>UsernameTokenSignature UsernameToken Encrypt Timestamp</items>
+        <passwordCallbackClass>org.apache.axis2.security.PWCallback</passwordCallbackClass>
+        <decryptionPropFile>interop.properties</decryptionPropFile>
+      </action>
+    </parameter>
 
-    <parameter name="OutAction" locked="false">NoSecurity</parameter>
 </service>

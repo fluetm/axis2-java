@@ -15,33 +15,26 @@
  */
 package org.apache.axis2.saaj;
 
-import org.apache.axis2.om.OMElement;
+import org.apache.axiom.om.impl.dom.ElementImpl;
 
+import javax.xml.soap.SOAPBody;
 import javax.xml.soap.SOAPBodyElement;
+import javax.xml.soap.SOAPElement;
+import javax.xml.soap.SOAPException;
 
-/**
- * Class SOAPBodeElementImpl
- *
- * @author Ashutosh Shahi
- *         ashutosh.shahi@gmail.com
- */
-public class SOAPBodyElementImpl extends SOAPElementImpl implements
-        SOAPBodyElement {
+public class SOAPBodyElementImpl extends SOAPElementImpl implements SOAPBodyElement {
 
     /**
-     * Constructor SOAPBodeElementImpl
+     * @param element
      */
-    public SOAPBodyElementImpl() {
-        super();
+    public SOAPBodyElementImpl(ElementImpl element) {
+        super(element);
     }
 
-    /**
-     * Constructor SOAPBodeElementImpl
-     *
-     * @param bodyElement
-     */
-    public SOAPBodyElementImpl(OMElement bodyElement) {
-        super(bodyElement);
+    public void setParentElement(SOAPElement parent) throws SOAPException {
+        if (!(parent instanceof SOAPBody)){
+            throw new IllegalArgumentException("Parent is not a SOAPBody");
+        }
+        this.parentElement = parent;
     }
-
 }

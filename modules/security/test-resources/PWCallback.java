@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.axis2.security;
 
 
 import org.apache.ws.security.WSPasswordCallback;
 
-
-
 import javax.security.auth.callback.Callback;
-
 import javax.security.auth.callback.CallbackHandler;
-
 import javax.security.auth.callback.UnsupportedCallbackException;
-
 import java.io.IOException;
 
 

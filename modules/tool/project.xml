@@ -22,7 +22,7 @@
 
     <name>Apache Axis 2.0 - Tools</name>
     <id>axis2-tools</id>
-    <groupId>axis2</groupId>
+    <groupId>org.apache.axis2</groupId>
     <description>Tools available for Axis 2.0.</description>
 
     <dependencies>
@@ -30,26 +30,27 @@
         <dependency>
             <groupId>ant</groupId>
             <artifactId>ant</artifactId>
-            <version>1.6.2</version>
+            <version>${ant.version}</version>
             <properties>
                 <module>true</module>
             </properties>
         </dependency>
+
         <dependency>
-            <groupId>axis2</groupId>
-            <artifactId>axis2-common</artifactId>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-kernel</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
-        
+
         <dependency>
-            <groupId>axis2</groupId>
-            <artifactId>axis2-wsdl</artifactId>
+            <groupId>org.apache.axis2</groupId>
+            <artifactId>axis2-codegen</artifactId>
             <version>${pom.currentVersion}</version>
         </dependency>
         <dependency>
-            <groupId>axis</groupId>
-            <artifactId>axis-wsdl4j</artifactId>
-            <version>1.2</version>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+            <version>${wsdl4j.version}</version>
             <properties>
                 <module>true</module>
             </properties>
@@ -58,14 +59,14 @@
 
     <build>
         <nagEmailAddress>axis-dev@ws.apache.org</nagEmailAddress>
-        <sourceDirectory>src</sourceDirectory>
+        <sourceDirectory>axis2-ant-plugin/src/main/java</sourceDirectory>
         <unitTestSourceDirectory>test</unitTestSourceDirectory>
 
         <sourceModifications>
             <sourceModification>
                 <className>fakeClass</className>
                 <excludes>
-                    <exclude>**/codegen/**/*.java</exclude>
+                    <exclude>**/eclipse/**/*.java</exclude>
                     <exclude>**/core/**/*.java</exclude>
                     <exclude>**/service/**/*.java</exclude>
                 </excludes>

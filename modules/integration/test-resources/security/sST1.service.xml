@@ -2,11 +2,13 @@
 	<parameter locked="false" name="ServiceClass">org.apache.axis2.oasis.ping.PingPortSkeleton</parameter>
 	<!--Mounting the method Ping-->
 	<operation name="Ping">
-		<messageReceiver class="org.apache.axis2.oasis.ping.PingPortMessageReceiver"/>
+		<messageReceiver class="org.apache.axis2.oasis.ping.PingPortMessageReceiverInOut"/>
 	</operation>    
 
-    <parameter name="InAction" locked="false">Timestamp SAMLTokenUnsigned</parameter>
-
-    <parameter name="OutAction" locked="false">NoSecurity</parameter>
+    <parameter name="InflowSecurity">
+      <action>
+        <items>Timestamp SAMLTokenUnsigned</items>
+      </action>
+    </parameter>
 
 </service>

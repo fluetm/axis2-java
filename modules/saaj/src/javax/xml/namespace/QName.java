@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package javax.xml.namespace;
 
 import java.io.IOException;
@@ -32,7 +33,9 @@ import java.io.Serializable;
  */
 public class QName implements Serializable {
 
-    /**
+    private static final long serialVersionUID = -6756054858541526837L;
+
+	/**
      * Comment/shared empty <code>String</code>.
      */
     private static final String emptyString = "".intern();
@@ -177,7 +180,7 @@ public class QName implements Serializable {
      */
     public static QName valueOf(String s) {
 
-        if ((s == null) || s.equals("")) {
+        if ((s == null) || "".equals(s)) {
             throw new IllegalArgumentException("invalid QName literal");
         }
 

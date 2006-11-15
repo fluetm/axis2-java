@@ -1,9 +1,29 @@
+/*
+* Copyright 2004,2005 The Apache Software Foundation.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
 package org.apache.axis2.saaj;
 
 import junit.framework.TestCase;
 
-import javax.xml.soap.*;
+import javax.xml.soap.DetailEntry;
+import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
+import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPFault;
+import javax.xml.soap.SOAPMessage;
 import java.io.ByteArrayInputStream;
 import java.util.Iterator;
 
@@ -13,7 +33,7 @@ public class SOAPFaultDetailTest extends TestCase {
 		super(name);
 	}
 	
-    String xmlString =
+    private String xmlString =
     	"<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
     	"<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
     	" <soapenv:Body>" +
@@ -22,7 +42,7 @@ public class SOAPFaultDetailTest extends TestCase {
     	"   <faultstring></faultstring>" +
     	"   <detail>" +
     	"    <tickerSymbol xsi:type=\"xsd:string\">MACR</tickerSymbol>" +
-    	"   <ns1:exceptionName xmlns:ns1=\"http://xml.apache.org/axis/\">test.wsdl.faults.InvalidTickerFaultMessage</ns1:exceptionName>" +
+    	"   <ns1:exceptionName xmlns:ns1=\"http://xml.apache.org/axis2/\">test.wsdl.faults.InvalidTickerFaultMessage</ns1:exceptionName>" +
     	"   </detail>" +
     	"  </soapenv:Fault>" +
     	" </soapenv:Body>" +
@@ -34,9 +54,9 @@ public class SOAPFaultDetailTest extends TestCase {
     		mf.createMessage(new MimeHeaders(), new ByteArrayInputStream(xmlString.getBytes()));
     	SOAPBody body = smsg.getSOAPBody();
     	//smsg.writeTo(System.out);
-    	SOAPFault flt = body.getFault();
-    	flt.addDetail();
-    	javax.xml.soap.Detail d = flt.getDetail();
+    	SOAPFault fault = body.getFault();
+    	fault.addDetail();
+    	javax.xml.soap.Detail d = fault.getDetail();
     	Iterator i = d.getDetailEntries();
     	while (i.hasNext()){
     		DetailEntry entry = (DetailEntry) i.next();
@@ -48,20 +68,9 @@ public class SOAPFaultDetailTest extends TestCase {
     			assertEquals("the value of the exceptionName element didn't match",
     					"test.wsdl.faults.InvalidTickerFaultMessage", entry.getValue());
     		} else {
-    			assertTrue("Expecting details element name of 'tickerSymbol' or 'expceptionName' - I found :" + name, false);
+    			assertTrue("Expecting details element name of 'tickerSymbol' or " +
+                           "'expceptionName' - I found :" +name, false);
     		}
     	}
-    	assertTrue(d != null);
     }
-    
-    /**
-     * Main
-     */
-    public static void main(String[] args)
-            throws Exception
-    {
-        SOAPFaultDetailTest detailTest = new SOAPFaultDetailTest("faultdetails");
-        detailTest.testDetails();
-    }
-
 }
