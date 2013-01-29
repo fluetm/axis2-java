@@ -21,6 +21,7 @@ package org.apache.axis2.description;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.namespace.QName;
 
@@ -54,4 +55,54 @@ public class WSDL11ToAxisServiceBuilderTest extends TestCase {
             in.close();
         }
     }
+    
+    public void testHttpVerbInAxisBinding() throws Exception {
+        InputStream in = new FileInputStream("test-resources/wsdl/simpleHttpBinding.wsdl");
+        final String targetNamespace = "http://www.example.org";
+        final QName serviceName = new QName(targetNamespace, "FooService");
+        final String portName = "FooHttpGetPort";
+        final QName operationName = new QName(targetNamespace, "getFoo");
+        final String expectedHttpVerb = "GET";
+        
+        AxisService service = new WSDL11ToAxisServiceBuilder(in, serviceName, portName).populateService();
+        AxisBinding binding = service.getEndpoint(portName).getBinding();
+        String actualHttpVerb = (String)binding.getProperty(
+            WSDL2Constants.ATTR_WHTTP_METHOD);
+        
+        // Sanity checks
+        assertNotNull("The HTTP verb declared in the '" + binding.getName() +
+            "' should not be null", actualHttpVerb);
+        assertEquals("The HTTP verb declared in the '" + binding.getName() +
+            "' was not the expected one", expectedHttpVerb, 
+            actualHttpVerb.toUpperCase());
+        
+        // Building HTTP location table information
+        AxisBindingOperation bindingOperation = 
+            (AxisBindingOperation)binding.getChild(operationName);
+        String httpLocation = (String)bindingOperation.getProperty(
+            WSDL2Constants.ATTR_WHTTP_LOCATION);
+        String httpLocationTableKey = getConstantFromHTTPLocation(
+            httpLocation, expectedHttpVerb);
+        
+        Map httpLocationTable = (Map)binding.getProperty(
+            WSDL2Constants.HTTP_LOCATION_TABLE);
+        
+        // Was the HTTP location table properly built?
+        AxisOperation operation = bindingOperation.getAxisOperation();
+        assertSame("The expected AxisBindingOperation is not present in the " +
+            "HTTPLocationTable under the '" + httpLocationTableKey +"' key", 
+            operation, httpLocationTable.get(httpLocationTableKey));
+    }
+
+    private String getConstantFromHTTPLocation(String httpLocation, String httpMethod) {
+      if (httpLocation.charAt(0) != '?') {
+          httpLocation = "/" + httpLocation;
+      }
+      int index = httpLocation.indexOf("{");
+      if (index > -1) {
+          httpLocation = httpLocation.substring(0, index);
+      }
+      return httpMethod + httpLocation;
+    }
+
 }

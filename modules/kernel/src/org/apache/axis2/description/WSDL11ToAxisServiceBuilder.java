@@ -691,7 +691,7 @@ public class WSDL11ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
             httpLocation =
                     (String) axisBindingOperation.getProperty(WSDL2Constants.ATTR_WHTTP_LOCATION);
             String httpMethod =
-                    (String) axisBindingOperation.getProperty(WSDL2Constants.ATTR_WHTTP_METHOD);
+                    (String) axisBinding.getProperty(WSDL2Constants.ATTR_WHTTP_METHOD);
             if (httpMethod == null || "".equals(httpMethod)) {
                 httpMethod = HTTPConstants.HEADER_POST;
             }
