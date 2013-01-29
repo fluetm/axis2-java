@@ -29,7 +29,7 @@
     </parent>
     <artifactId>axis2-kernel</artifactId>
     <name>Apache Axis2 - Kernel</name>
-    <version>1.6.2-appian-5</version>
+    <version>1.6.2-appian-1.0</version>
     <description>Core Parts of Axis2. This includes Axis2 engine, Client API, Addressing support, etc.,
     </description>
     <dependencies>
