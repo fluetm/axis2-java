@@ -728,6 +728,7 @@ public class WSDL11ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                     if (isSetMessageQNames) {
                         BindingOperationEntry boe = find(wrappableBOEs, wsdl4jBindingOperation);
                         boolean isWrapped = (boe == null) ? false : boe.isWrappedInput();
+                        axisInMessage.setWrapped(isWrapped);
                         addQNameReference(axisInMessage, wsdl4jOperation,
                                 wsdl4jBindingInput,
                                 isWrapped);
@@ -766,6 +767,7 @@ public class WSDL11ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                     if (isSetMessageQNames) {
                         BindingOperationEntry boe = find(wrappableBOEs, wsdl4jBindingOperation);
                         boolean isWrapped = (boe == null) ? false : boe.isWrappedInput();
+                        axisOutMessage.setWrapped(isWrapped);
                         addQNameReference(axisOutMessage, wsdl4jOperation,
                                 wsdl4jBindingInput,
                                 isWrapped);
