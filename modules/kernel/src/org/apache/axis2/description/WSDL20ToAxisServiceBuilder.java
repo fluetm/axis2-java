@@ -685,9 +685,11 @@ public class WSDL20ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                 AxisBindingMessage axisBindingMessage = new AxisBindingMessage();
                 axisBindingMessage.setParent(axisBindingOperation);
                 addDocumentation(axisBindingMessage, bindingMessageReference.toElement());
-                AxisMessage axisMessage = axisOperation.getMessage(bindingMessageReference
-                        .getInterfaceMessageReference().getMessageLabel().toString());
+                String interfaceMessageLabel = bindingMessageReference
+                    .getInterfaceMessageReference().getMessageLabel().toString();
 
+                AxisMessage axisMessage = getAxisMessage(axisOperation,
+                    interfaceMessageLabel);
                 axisBindingMessage.setAxisMessage(axisMessage);
                 axisBindingMessage.setName(axisMessage.getName());
                 axisBindingMessage.setDirection(axisMessage.getDirection());
@@ -891,12 +893,15 @@ public class WSDL20ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                 AxisBindingMessage axisBindingMessage = new AxisBindingMessage();
                 axisBindingMessage.setParent(axisBindingOperation);
 
-                AxisMessage axisMessage = axisOperation.getMessage(bindingMessageReference
-                        .getInterfaceMessageReference().getMessageLabel().toString());
+                String interfaceMessageLabel = bindingMessageReference.
+                  getInterfaceMessageReference().getMessageLabel().toString();
+
+                AxisMessage axisMessage = getAxisMessage(axisOperation, interfaceMessageLabel);
+                String messageDirection = axisMessage.getDirection();
 
                 axisBindingMessage.setAxisMessage(axisMessage);
                 axisBindingMessage.setName(axisMessage.getName());
-                axisBindingMessage.setDirection(axisMessage.getDirection());
+                axisBindingMessage.setDirection(messageDirection);
 
                 addDocumentation(axisBindingMessage, bindingMessageReference.toElement());
                 HTTPBindingMessageReferenceExtensions httpBindingMessageReferenceExtensions;
@@ -914,7 +919,18 @@ public class WSDL20ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                                                        httpBindingMessageReferenceExtensions.getHttpHeaders()));
                 axisBindingMessage.setProperty(WSDL2Constants.ATTR_WHTTP_CONTENT_ENCODING,
                                                httpBindingMessageReferenceExtensions.getHttpContentEncoding());
-                axisBindingOperation.addChild(WSDLConstants.MESSAGE_LABEL_IN_VALUE, axisBindingMessage);
+                
+                String messageLabel;
+                if (WSDLConstants.WSDL_MESSAGE_DIRECTION_IN.equals(messageDirection)) {
+                  messageLabel = WSDLConstants.MESSAGE_LABEL_IN_VALUE;
+                } else if (WSDLConstants.WSDL_MESSAGE_DIRECTION_OUT.equals(messageDirection)) {
+                  messageLabel = WSDLConstants.MESSAGE_LABEL_OUT_VALUE;
+                } else {
+                  throw new AxisFault("Unsupported Message Direction (" +
+                    messageDirection + "). Operation: " + axisOperation.getName() +
+                    "; Binding Message: " + axisBindingMessage.getName());
+                }
+                axisBindingOperation.addChild(messageLabel, axisBindingMessage);
 
             }
 
@@ -937,6 +953,23 @@ public class WSDL20ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
             axisBinding.addChild(axisBindingOperation.getName(), axisBindingOperation);
 
         }
+    }
+
+    private AxisMessage getAxisMessage(AxisOperation axisOperation, String interfaceMessageLabel) 
+      throws AxisFault {
+      
+        AxisMessage axisMessage;
+        if (WSDLConstants.MESSAGE_LABEL_IN_VALUE.equals(interfaceMessageLabel)) {
+            axisMessage = axisOperation.getMessage(isServerSide() ?
+                interfaceMessageLabel : WSDLConstants.MESSAGE_LABEL_OUT_VALUE);
+        } else if (WSDLConstants.MESSAGE_LABEL_OUT_VALUE.equals(interfaceMessageLabel)) {
+            axisMessage = axisOperation.getMessage(isServerSide() ?
+                interfaceMessageLabel : WSDLConstants.MESSAGE_LABEL_IN_VALUE);
+        } else {
+            throw new AxisFault("Unsupported Message Label (" +
+                interfaceMessageLabel + "). Operation: " + axisOperation.getName());
+      }
+      return axisMessage;
     }
 
     private void processInterface(Interface serviceInterface)
