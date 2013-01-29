@@ -1768,6 +1768,11 @@ public class WSDL11ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                                                          namespacePrefixMap, 
                                                          boEntry);
 
+                // No wrapped element needs to be created
+                if (!boEntry.isWrappedInput()) {
+                  continue;
+                }
+
                 elementDeclaration.appendChild(newComplexType);
                 String namespaceToUse = namespaceURI;
 
@@ -1857,6 +1862,12 @@ public class WSDL11ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                                                          namespaceImportsMap,
                                                          namespacePrefixMap,
                                                          boEntry);
+
+                // No wrapped element needs to be created
+                if (!boEntry.isWrappedInput()) {
+                  continue;
+                }
+
                 elementDeclaration.appendChild(newComplexType);
 
                 String namespaceToUse = namespaceURI;
@@ -2261,7 +2272,11 @@ public class WSDL11ToAxisServiceBuilder extends WSDLToAxisServiceBuilder {
                    "and use the type attribute.");
             } else {
                 // The presense of an element means that a wrapper xsd element is not needed.
-                boe.setWrappedOutput(false);
+                if (isOutMessage){
+                    boe.setWrappedOutput(false);
+                } else {
+                    boe.setWrappedInput(false);
+                }
                 if (log.isDebugEnabled()) {
                     log.debug("The binding operation " + bindingOperationName + 
                               " references message part " +
